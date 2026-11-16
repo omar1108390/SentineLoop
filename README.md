@@ -35,9 +35,11 @@ python -m fuzzer.runner --mutate
 python -m fuzzer.runner --mutate --firewall
 python -m fuzzer.search.genetic --generations 5 --population 20
 python -m fuzzer.search.genetic --generations 5 --population 20 --firewall
+python -m fuzzer.search.map_elites --iterations 200
+python -m fuzzer.search.map_elites --iterations 200 --firewall
 ```
 
-The fuzzer runs each prompt in a fresh sandbox and writes JSON/CSV per-attempt details and per-family ASR under `artifacts/`. The genetic search evolves prompt variants with a fixed random seed and stores its generation history and final archive there too.
+The fuzzer runs each prompt in a fresh sandbox and writes JSON/CSV per-attempt details and per-family ASR under `artifacts/`. The genetic search evolves prompt variants with a fixed random seed and stores its generation history and final archive there too. MAP-Elites keeps candidates in a family-by-technique archive and reports coverage and breach cells.
 
 The checked-in sample run has 35 non-benign attacks and three benign prompts: baseline ASR is 25/35 (71.4%); the heuristic firewall ASR is 0/35, with 0/3 benign prompts blocked. This tiny self-generated corpus checks the software path only; it does not establish general security. The firewall is a research prototype, not a trained classifier or production gateway.
 

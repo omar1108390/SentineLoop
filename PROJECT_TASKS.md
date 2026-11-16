@@ -88,8 +88,8 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ## Phase 4: Advanced Fuzzer: MAP-Elites (Week 3-4)
 
-- [ ] **P0** Define behavior dimensions for the MAP-Elites grid (e.g., attack family x technique/obfuscation level)
-- [ ] **P0** Implement MAP-Elites with pyribs (archive, emitters, fitness = breach success)
+- [x] **P0** Define MAP-Elites behavior dimensions as attack family x mutation technique
+- [x] **P0** Implement MAP-Elites archive and mutation emitter with breach fitness (custom implementation; pyribs integration pending)
 - [ ] **P1** Visualize the archive as a heatmap (coverage and best fitness per cell)
 - [ ] **P1** Compare GA vs. MAP-Elites on attack diversity and bypass count
 - [ ] **P1** Parallelize attack execution with Celery + Redis (or Ray)
