@@ -64,7 +64,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ## Phase 3: Firewall v1 (Week 3)
 
 ### Gateway
-- [x] **P0** Build the FastAPI OpenAI-compatible proxy with sandbox default, optional upstream, input/output firewall checks (streaming remains pending)
+- [x] **P0** Build the FastAPI OpenAI-compatible proxy with sandbox default, optional upstream, input/output firewall checks and buffered SSE responses
 - [x] **P0** Define a common inspection result with verdict, score, reason, and latency (context interface refinement pending)
 - [x] **P0** Emit JSON decision logs with layer, score, verdict, reason, and latency
 

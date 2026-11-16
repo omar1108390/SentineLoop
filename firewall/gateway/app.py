@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from firewall import Firewall, Inspection
@@ -82,6 +82,31 @@ def _completion(model: str, text: str, finish_reason: str = "stop") -> dict[str,
             "choices": [{"index": 0, "message": {"role": "assistant", "content": text},
                          "finish_reason": finish_reason}],
             "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+
+
+def _stream_completion(result: dict[str, Any]) -> StreamingResponse:
+    choice = result["choices"][0]
+    message = choice.get("message", {})
+    content = message.get("content") or ""
+    finish_reason = choice.get("finish_reason", "stop")
+    base = {"id": result.get("id", "chatcmpl-" + uuid.uuid4().hex),
+            "object": "chat.completion.chunk", "created": result.get("created", int(time.time())),
+            "model": result.get("model", "sentinelloop-sandbox")}
+
+    def events():
+        first = {**base, "choices": [{"index": 0, "delta": {"role": "assistant"},
+                                      "finish_reason": None}]}
+        yield "data: " + json.dumps(first, ensure_ascii=False) + "\n\n"
+        if content:
+            token = {**base, "choices": [{"index": 0, "delta": {"content": content},
+                                           "finish_reason": None}]}
+            yield "data: " + json.dumps(token, ensure_ascii=False) + "\n\n"
+        final = {**base, "choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}]}
+        yield "data: " + json.dumps(final, ensure_ascii=False) + "\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 def _upstream_request(payload: dict[str, Any], base_url: str, api_key: str | None) -> dict[str, Any]:
@@ -244,9 +269,7 @@ def dashboard() -> str:
 
 
 @app.post("/v1/chat/completions")
-def chat_completions(request: ChatRequest) -> dict[str, Any]:
-    if request.stream:
-        raise HTTPException(status_code=501, detail="Streaming is not supported yet")
+def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
     request_id = uuid.uuid4().hex
     firewall = Firewall()
     messages = [dict(message) for message in request.messages]
@@ -256,11 +279,15 @@ def chat_completions(request: ChatRequest) -> dict[str, Any]:
         _log_inspection(request_id, check)
     blocked = next((check for check in checks if check.verdict == "block"), None)
     if blocked:
-        return _completion(request.model, "Request blocked by SentinelLoop firewall.", "content_filter")
+        result = _completion(request.model, "Request blocked by SentinelLoop firewall.", "content_filter")
+        return _stream_completion(result) if request.stream else result
 
     upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
     if upstream:
         payload = request.model_dump(exclude_none=True)
+        if request.stream:
+            # Buffer upstream output so the full answer passes the output guard before any SSE data is sent.
+            payload["stream"] = False
         result = _upstream_request(payload, upstream, os.getenv("SENTINELLOOP_API_KEY"))
         try:
             answer = result["choices"][0]["message"]["content"] or ""
@@ -293,7 +320,7 @@ def chat_completions(request: ChatRequest) -> dict[str, Any]:
             result["choices"][0]["finish_reason"] = "content_filter"
         elif output_check.verdict == "block":
             result["choices"][0]["finish_reason"] = "content_filter"
-        return result
+        return _stream_completion(result) if request.stream else result
 
     guard = lambda text: _inspect_untrusted(firewall, request_id, text)
     agent = DemoAgent()
@@ -309,7 +336,8 @@ def chat_completions(request: ChatRequest) -> dict[str, Any]:
     if not untrusted:
         response = "I can summarize sandbox email, search fake files, or update the sandbox calendar."
     finish_reason = "content_filter" if output_check and output_check.verdict == "block" else "stop"
-    return _completion(request.model, response, finish_reason)
+    result = _completion(request.model, response, finish_reason)
+    return _stream_completion(result) if request.stream else result
 
 
 def _inspect_untrusted(firewall: Firewall, request_id: str, text: str) -> bool:
