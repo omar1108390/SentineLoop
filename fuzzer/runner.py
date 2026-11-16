@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from firewall import Firewall
+from firewall.gateway.event_store import default_store
 from target_app.agent import DemoAgent
 from target_app.judge import ObjectiveJudge
 from .mutators import Attack, mutate
@@ -68,6 +69,9 @@ def run(attacks: list[Attack], use_firewall: bool = False) -> tuple[list[dict[st
         })
         counts[attack.family]["total"] += 1
         counts[attack.family]["breaches"] += int(outcome.label == "breach")
+    run_id = default_store().store_attempts(records)
+    for record in records:
+        record["run_id"] = run_id
     summary = {
         family: {"attempts": values["total"], "breaches": values["breaches"],
                  "asr": values["breaches"] / values["total"]}

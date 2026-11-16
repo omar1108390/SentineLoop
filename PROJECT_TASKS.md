@@ -10,7 +10,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Create the Git repository with the folder structure from the project description
 - [ ] **P0** Write a short `README.md` (goal, how to run)
 - [ ] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
-- [x] **P0** Add Docker Compose deployment for the gateway (sandbox target embedded; Redis/PostgreSQL remain pending)
+- [x] **P0** Add Docker Compose gateway, PostgreSQL, and fuzzer profile (sandbox target embedded; Redis remains pending)
 - [ ] **P0** Decide model strategy: local (Ollama/vLLM) vs. API; test one model end to end
 - [ ] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
 - [ ] **P1** Set up experiment tracking (MLflow or W&B) and dataset versioning (DVC)
@@ -51,7 +51,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ### Fuzzer v1
 - [x] **P0** Implement paraphrase, base64/ROT13, Unicode, document wrapping, and distractor mutations (translation pending)
-- [x] **P0** Implement local attack runner with JSON/CSV records (PostgreSQL integration pending)
+- [x] **P0** Implement fuzzer runner with JSON/CSV artifacts and SQLite/PostgreSQL attempt persistence
 - [x] **P0** Implement seeded genetic search with elite selection, mutation, crossover, and breach fitness
 - [ ] **P1** Add LLM-driven mutation (attacker LLM rewrites payloads using failure feedback)
 - [x] **P1** Add multi-turn attack support with persistent conversation state

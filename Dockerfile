@@ -9,7 +9,7 @@ COPY target_app ./target_app
 COPY firewall ./firewall
 COPY fuzzer ./fuzzer
 COPY evaluation ./evaluation
-RUN pip install --no-cache-dir . \
+RUN pip install --no-cache-dir ".[storage]" \
     && useradd --system --uid 10001 --create-home appuser \
     && chown -R appuser:appuser /app
 

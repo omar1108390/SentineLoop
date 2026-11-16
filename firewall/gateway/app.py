@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from firewall import Firewall, Inspection
 from firewall.policies.tool_policy import ToolPolicy
+from firewall.gateway.event_store import default_store
 from target_app.agent import DemoAgent
 
 
@@ -39,6 +40,7 @@ logger.propagate = False
 events: deque[dict[str, Any]] = deque(maxlen=500)
 app = FastAPI(title="SentinelLoop Firewall Gateway", version="0.1.0")
 tool_policy = ToolPolicy()
+event_store = default_store()
 
 
 class ChatRequest(BaseModel):
@@ -54,6 +56,10 @@ def _log_inspection(request_id: str, result: Inspection) -> None:
              "score": result.score, "latency_ms": result.latency_ms, "reason": result.reason,
              "timestamp": time.time()}
     events.appendleft(event)
+    try:
+        event_store.append_event(event)
+    except Exception:
+        logger.exception("event_store_write_failed")
     logger.info("firewall_decision", extra={key: value for key, value in event.items() if key != "timestamp"})
 
 
@@ -102,7 +108,11 @@ def models() -> dict[str, Any]:
 
 @app.get("/v1/events")
 def recent_events(limit: int = 100) -> dict[str, Any]:
-    selected = list(events)[:max(1, min(limit, 500))]
+    try:
+        selected = event_store.recent_events(limit)
+    except Exception:
+        logger.exception("event_store_read_failed")
+        selected = list(events)[:max(1, min(limit, 500))]
     latencies = sorted(float(event["latency_ms"]) for event in selected)
     p95_index = max(0, int(0.95 * len(latencies) + 0.999) - 1)
     return {"events": selected, "metrics": {

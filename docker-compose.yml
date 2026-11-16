@@ -1,9 +1,27 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sentinelloop
+      POSTGRES_USER: sentinelloop
+      POSTGRES_PASSWORD: local-dev-only
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinelloop -d sentinelloop"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   gateway:
     build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
+      SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_UPSTREAM_URL: ${SENTINELLOOP_UPSTREAM_URL:-}
       SENTINELLOOP_API_KEY: ${SENTINELLOOP_API_KEY:-}
       SENTINELLOOP_MODEL: ${SENTINELLOOP_MODEL:-sentinelloop-sandbox}
@@ -21,3 +39,23 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+
+  fuzzer:
+    build: .
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
+    volumes:
+      - ./artifacts:/app/artifacts
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
+    command: ["python", "-m", "fuzzer.runner", "--mutate", "--firewall"]
+
+volumes:
+  postgres_data:
