@@ -52,7 +52,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ### Fuzzer v1
 - [x] **P0** Implement paraphrase, base64/ROT13, Unicode, document wrapping, and distractor mutations (translation pending)
 - [x] **P0** Implement local attack runner with JSON/CSV records (PostgreSQL integration pending)
-- [ ] **P0** Implement a basic genetic algorithm (selection, mutation, crossover) with fitness = breach success
+- [x] **P0** Implement seeded genetic search with elite selection, mutation, crossover, and breach fitness
 - [ ] **P1** Add LLM-driven mutation (attacker LLM rewrites payloads using failure feedback)
 - [ ] **P1** Add multi-turn attack support (conversation state)
 - [x] **P0** Run reproducible no-firewall baseline and report ASR per family

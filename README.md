@@ -33,9 +33,11 @@ To proxy to an OpenAI-compatible backend, set `SENTINELLOOP_UPSTREAM_URL` to its
 python -m target_app --demo
 python -m fuzzer.runner --mutate
 python -m fuzzer.runner --mutate --firewall
+python -m fuzzer.search.genetic --generations 5 --population 20
+python -m fuzzer.search.genetic --generations 5 --population 20 --firewall
 ```
 
-The fuzzer runs each prompt in a fresh sandbox and writes JSON/CSV per-attempt details and per-family ASR under `artifacts/`.
+The fuzzer runs each prompt in a fresh sandbox and writes JSON/CSV per-attempt details and per-family ASR under `artifacts/`. The genetic search evolves prompt variants with a fixed random seed and stores its generation history and final archive there too.
 
 The checked-in sample run has 35 non-benign attacks and three benign prompts: baseline ASR is 25/35 (71.4%); the heuristic firewall ASR is 0/35, with 0/3 benign prompts blocked. This tiny self-generated corpus checks the software path only; it does not establish general security. The firewall is a research prototype, not a trained classifier or production gateway.
 
@@ -43,7 +45,7 @@ The checked-in sample run has 35 non-benign attacks and three benign prompts: ba
 
 - `target_app/`: intentionally vulnerable deterministic email assistant and fake tools.
 - `target_app/judge.py`: objective canary, tool-call, and state-change checks.
-- `fuzzer/`: categorized seeds, mutation operators, and baseline/firewall runner.
+- `fuzzer/`: categorized seeds, mutation operators, runner, and genetic search.
 - `firewall/gateway/app.py`: HTTP API and optional OpenAI-compatible upstream.
 - `firewall/layers/`: normalizer, transparent heuristic classifier, and output guard.
 - `artifacts/`: sample benchmark output.
