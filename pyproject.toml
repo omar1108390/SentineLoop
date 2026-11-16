@@ -9,6 +9,9 @@ description = "A sandboxed prompt-injection firewall and red-team benchmark"
 requires-python = ">=3.11"
 dependencies = ["fastapi>=0.110,<1", "uvicorn[standard]>=0.29,<1"]
 
+[project.optional-dependencies]
+train = ["scikit-learn>=1.4,<2"]
+
 [tool.setuptools.packages.find]
 include = ["target_app*", "fuzzer*", "firewall*", "evaluation*", "hardening*"]
 
@@ -19,6 +22,7 @@ target-version = "py311"
 [tool.setuptools.package-data]
 "firewall.gateway" = ["dashboard.html"]
 "firewall.policies" = ["tool_policy.json"]
+"firewall.models" = ["*.json"]
 fuzzer = ["seeds/*.json"]
 evaluation = ["benign/*.json", "train/*.json", "validation/*.json", "holdout/*.json"]
 

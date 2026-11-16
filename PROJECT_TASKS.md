@@ -70,7 +70,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ### Layers
 - [x] **P0** **L0 Normalizer:** decode base64/rot13/URL, strip zero-width characters, normalize compatibility Unicode, and inspect HTML/comment text
-- [ ] **P0** **L1 Classifier:** fine-tune DeBERTa-v3 or ModernBERT on the train split; evaluate on validation
+- [x] **P0** Train a logistic-regression baseline classifier on the train split and evaluate on validation (DeBERTa-v3/ModernBERT fine-tuning remains pending)
 - [ ] **P1** Export classifier to ONNX and benchmark latency
 - [x] **P1** **L2 Similarity:** add TF-IDF cosine index over train attacks (sentence-transformer dense embeddings and FAISS/Qdrant pending)
 - [x] **P0** **L5 Output guard:** detect and redact the fake secret and canary (broader sensitive-data patterns pending)
