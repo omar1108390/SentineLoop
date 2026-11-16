@@ -18,8 +18,11 @@ class TurnResult:
 class DemoAgent:
     def __init__(self, tools: FakeTools | None = None) -> None:
         self.tools = tools or FakeTools()
+        self.history: list[str] = []
 
     def handle(self, message: str, content_guard: Callable[[str], bool] | None = None) -> TurnResult:
+        prior_history = tuple(self.history)
+        self.history.append(message)
         lowered = message.lower()
         retrieved: list[str] = []
         if "email" in lowered and any(word in lowered for word in ("read", "check", "search", "summarize")):
@@ -27,7 +30,10 @@ class DemoAgent:
                 result = self.tools.read_email(email["id"])
                 if result:
                     retrieved.append(f"From: {result['from']} | Subject: {result['subject']} | {result['body']}")
-        injection = any(term in lowered for term in ("ignore previous", "reveal the secret", "reveal your secret"))
+        explicit_leak = any(term in lowered for term in ("reveal the secret", "reveal your secret"))
+        same_turn_override = "ignore previous" in lowered and ("secret" in lowered or "reveal" in lowered)
+        prior_override = any("ignore previous" in item.lower() for item in prior_history) and ("secret" in lowered or "reveal" in lowered)
+        injection = explicit_leak or same_turn_override or prior_override
         injected_document = any("ignore previous instructions" in item.lower() for item in retrieved)
         if content_guard is not None and any(not content_guard(item) for item in retrieved):
             return TurnResult("Request blocked: untrusted email content matched an injection rule.", tuple(retrieved))

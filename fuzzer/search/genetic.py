@@ -15,15 +15,21 @@ from ..runner import load_attacks
 def evaluate(attack: Attack, use_firewall: bool) -> tuple[float, str]:
     agent = DemoAgent()
     firewall = Firewall() if use_firewall else None
-    if firewall and firewall.inspect_input(attack.prompt).verdict == "block":
-        return 0.0, "blocked"
     guard = (lambda text: firewall.inspect_untrusted(text).verdict != "block") if firewall else None
-    result = agent.handle(attack.prompt, content_guard=guard)
-    response = result.response
-    if firewall:
-        response, _ = firewall.inspect_output(response)
-    outcome = ObjectiveJudge().evaluate(response, agent.tools.state)
-    return float(outcome.label == "breach"), outcome.label
+    outcome_label = "blocked"
+    for prompt in attack.turns or (attack.prompt,):
+        if firewall and firewall.inspect_input(prompt).verdict == "block":
+            outcome_label = "blocked"
+            break
+        result = agent.handle(prompt, content_guard=guard)
+        response = result.response
+        if firewall:
+            response, _ = firewall.inspect_output(response)
+        outcome = ObjectiveJudge().evaluate(response, agent.tools.state)
+        outcome_label = outcome.label
+        if outcome.label == "breach":
+            break
+    return float(outcome_label == "breach"), outcome_label
 
 
 def crossover(first: Attack, second: Attack, rng: random.Random) -> Attack:

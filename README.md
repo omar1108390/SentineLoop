@@ -41,7 +41,7 @@ This starts the gateway on `http://localhost:8000` with the sandbox backend. Sto
 ```powershell
 python -m target_app --demo
 python -m fuzzer.runner --mutate
-python -m fuzzer.runner --mutate --firewall
+python -m fuzzer.runner --mutate --firewall  # includes multi-turn seed attacks
 python -m fuzzer.search.genetic --generations 5 --population 20
 python -m fuzzer.search.genetic --generations 5 --population 20 --firewall
 python -m fuzzer.search.map_elites --iterations 200
@@ -55,7 +55,7 @@ python -m hardening.run_round --rounds 4
 
 The fuzzer runs each prompt in a fresh sandbox and writes JSON/CSV per-attempt details and per-family ASR under `artifacts/`. The genetic search evolves prompt variants with a fixed random seed and stores its generation history and final archive there too. MAP-Elites keeps candidates in a family-by-technique archive and reports coverage and breach cells. The round runner attacks training data, builds an exact-match rule set from observed breaches and benign counterexamples, then measures ASR and FPR on the hash-locked holdout.
 
-The current local corpus has 20 attack seeds and 30 benign prompts. The mutation run recorded baseline ASR of 89/140 (63.6%) and firewall ASR of 0/140. On the locked holdout, the unprotected target breached on 5/5 attacks; the firewall breached on 0/5 and blocked 0/3 benign prompts. Four hardening rounds ran (v0 to v4), but the current firewall found no training bypasses, so it added no learned rules and showed no adaptation gain. The validation/holdout layer report evaluates the trained L1 logistic-regression model and L2 TF-IDF index separately and together; the combined detector catches 5/5 attacks in each split at validation-selected thresholds (L1 0.30; L2 0.55), with 0/3 benign prompts flagged in each. These self-generated results validate the pipeline only; they do not establish general security. The firewall is a heuristic prototype, not a trained classifier or production gateway.
+The current local corpus has 24 attack seeds (including four two-turn attacks) and 30 benign prompts. The mutation run recorded baseline ASR of 97/168 (57.7%) and firewall ASR of 0/168. On the locked holdout, the unprotected target breached on 6/6 attacks; the firewall breached on 0/6 and blocked 0/3 benign prompts. Four hardening rounds ran (v0 to v4), but the current firewall found no training bypasses, so it added no learned rules and showed no adaptation gain. The validation/holdout layer report evaluates the trained L1 logistic-regression model and L2 TF-IDF index separately and together; the combined detector catches all attacks in both splits (6/6 validation and 6/6 holdout) at validation-selected thresholds (L1 0.30; L2 0.55), with 0/3 benign prompts flagged in each. These self-generated results validate the pipeline only; they do not establish general security. The firewall is a heuristic prototype, not a trained classifier or production gateway.
 
 ## Code map
 

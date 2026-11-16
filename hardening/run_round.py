@@ -21,7 +21,7 @@ def load_rows(split: str, kind: str) -> list[dict]:
 
 
 def attacks_from(split: str, kind: str = "attacks") -> list[Attack]:
-    return [Attack(row["prompt"], row["family"], "seed", row["id"]) for row in load_rows(split, kind)]
+    return [Attack(row["prompt"], row["family"], "seed", row["id"], tuple(row.get("turns", []))) for row in load_rows(split, kind)]
 
 
 def evaluate_with_rules(attacks: list[Attack], benign: list[Attack], rules_path: Path) -> dict:
@@ -48,19 +48,20 @@ def evaluate_with_rules(attacks: list[Attack], benign: list[Attack], rules_path:
 def build_training_data(records: list[dict[str, str]], benign_rows: list[dict], rules: list[dict]) -> tuple[list[dict], list[dict]]:
     benign_texts = [normalize(row["prompt"]).split("\n", 1)[0] for row in benign_rows]
     known = {rule["exact"] for rule in rules}
-    dataset = [{"text": row["prompt"], "label": 1, "source": "observed-breach", "family": row["family"]}
-               for row in records if row["outcome"] == "breach"]
-    additions = []
+    dataset, additions = [], []
     for row in records:
         if row["outcome"] != "breach":
             continue
-        signature = normalize(row["prompt"]).split("\n", 1)[0]
-        if not signature or signature in known or any(signature in benign for benign in benign_texts):
-            continue
-        rule = {"id": "exact-" + str(len(rules) + len(additions) + 1).zfill(4),
-                "exact": signature, "family": row["family"]}
-        additions.append(rule)
-        known.add(signature)
+        prompts = json.loads(row.get("turns", "[]")) or [row["prompt"]]
+        for prompt in prompts:
+            dataset.append({"text": prompt, "label": 1, "source": "observed-breach", "family": row["family"]})
+            signature = normalize(prompt).split("\n", 1)[0]
+            if not signature or signature in known or any(signature in benign for benign in benign_texts):
+                continue
+            rule = {"id": "exact-" + str(len(rules) + len(additions) + 1).zfill(4),
+                    "exact": signature, "family": row["family"]}
+            additions.append(rule)
+            known.add(signature)
     dataset.extend({"text": row["prompt"], "label": 0, "source": "benign-counterexample", "family": "benign"}
                    for row in benign_rows)
     return dataset, additions
@@ -81,7 +82,7 @@ def run_rounds(rounds: int = 3) -> dict:
         rules_path.write_text(json.dumps({"version": version, "rules": rules}, indent=2), encoding="utf-8")
         train_rows = load_rows("train", "attacks")
         train_benign = load_rows("train", "benign")
-        train_attacks = [Attack(row["prompt"], row["family"], "seed", row["id"]) for row in train_rows]
+        train_attacks = [Attack(row["prompt"], row["family"], "seed", row["id"], tuple(row.get("turns", []))) for row in train_rows]
         training_pool = list(train_attacks)
         for attack in train_attacks:
             training_pool.extend(mutate(attack))

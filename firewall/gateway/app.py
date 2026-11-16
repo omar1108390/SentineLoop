@@ -172,12 +172,18 @@ def chat_completions(request: ChatRequest) -> dict[str, Any]:
         return result
 
     guard = lambda text: _inspect_untrusted(firewall, request_id, text)
-    user_text = "\n".join(_text_content(message.get("content")) for message in untrusted)
     agent = DemoAgent()
-    response = agent.handle(user_text, content_guard=guard).response
-    filtered, output_check = firewall.inspect_output(response)
-    _log_inspection(request_id, output_check)
-    finish_reason = "content_filter" if output_check.verdict == "block" else "stop"
+    response = ""
+    output_check = None
+    for message in untrusted:
+        turn_text = _text_content(message.get("content"))
+        response = agent.handle(turn_text, content_guard=guard).response
+        response, output_check = firewall.inspect_output(response)
+        _log_inspection(request_id, output_check)
+        if output_check.verdict == "block":
+            break
+    if not untrusted:
+        response = "I can summarize sandbox email, search fake files, or update the sandbox calendar."    finish_reason = "content_filter" if output_check.verdict == "block" else "stop"
     return _completion(request.model, filtered, finish_reason)
 
 

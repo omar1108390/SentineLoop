@@ -17,12 +17,16 @@ def _tokens(text: str) -> list[str]:
 
 class SimilarityIndex:
     def __init__(self, examples: list[dict[str, str]]) -> None:
-        self.examples = examples
-        self.term_counts = [Counter(_tokens(row["prompt"])) for row in examples]
+        self.examples = []
+        for row in examples:
+            turns = row.get("turns") or [row["prompt"]]
+            self.examples.extend({"id": f"{row.get('id', 'attack')}-turn-{index}", "prompt": turn}
+                                 for index, turn in enumerate(turns))
+        self.term_counts = [Counter(_tokens(row["prompt"])) for row in self.examples]
         document_frequency: Counter[str] = Counter()
         for terms in self.term_counts:
             document_frequency.update(terms.keys())
-        count = max(1, len(examples))
+        count = max(1, len(self.examples))
         self.idf = {term: math.log((count + 1) / (frequency + 1)) + 1
                     for term, frequency in document_frequency.items()}
         self.vectors = [self._vector(terms) for terms in self.term_counts]

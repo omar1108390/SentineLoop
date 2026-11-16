@@ -23,16 +23,16 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ## Phase 1: Target App and Judge (Week 1)
 
 ### Target application
-- [ ] **P0** Build the demo email-assistant agent (LangGraph or MCP)
-- [ ] **P0** Implement fake tools: `read_email`, `send_email`, `search_files`, `calendar_add`
-- [ ] **P0** Add a system prompt with a **fake secret** and a **canary token**
-- [ ] **P0** Add a document/RAG input path to enable indirect injection (emails, web pages, files)
-- [ ] **P0** Make `send_email` a logged no-op (no real network access)
-- [ ] **P1** Write 30+ benign tasks the agent should handle correctly (used for utility and FPR)
+- [x] **P0** Build deterministic sandbox email-assistant agent
+- [x] **P0** Implement in-memory fake tools: `read_email`, `send_email`, `search_files`, `calendar_add`
+- [x] **P0** Add fake secret and canary to the sandbox agent (prompt-template separation pending)
+- [x] **P0** Add a seeded-email retrieval path for indirect injection
+- [x] **P0** Make fake `send_email` a logged in-memory no-op
+- [x] **P1** Add 30 benign prompts for FPR/utility evaluation
 
 ### Judge
-- [ ] **P0** Implement objective checks: canary leaked, forbidden tool called, unexpected state change
-- [ ] **P0** Define outcome labels: `blocked`, `allowed-harmless`, `breach`
+- [x] **P0** Implement objective checks for canary leakage, forbidden tool calls, and unexpected state
+- [x] **P0** Define outcome labels: `blocked`, `allowed-harmless`, `breach`
 - [ ] **P1** Implement LLM-as-judge with a written rubric for ambiguous cases
 - [ ] **P1** Hand-label 100+ attempts and measure judge accuracy
 - [ ] **P0** Unit tests for each judge rule
@@ -54,7 +54,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Implement local attack runner with JSON/CSV records (PostgreSQL integration pending)
 - [x] **P0** Implement seeded genetic search with elite selection, mutation, crossover, and breach fitness
 - [ ] **P1** Add LLM-driven mutation (attacker LLM rewrites payloads using failure feedback)
-- [ ] **P1** Add multi-turn attack support (conversation state)
+- [x] **P1** Add multi-turn attack support with persistent conversation state
 - [x] **P0** Run reproducible no-firewall baseline and report ASR per family
 
 **Done when:** one command runs N attacks against the unprotected app and produces a per-family ASR table.

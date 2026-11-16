@@ -7,87 +7,93 @@
     "rules": {
       "tp": 4,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
-      "detection_rate": 0.8,
+      "detection_rate": 0.6666666666666666,
       "false_positive_rate": 0.0
     },
     "classifier": {
-      "tp": 5,
+      "tp": 6,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
       "detection_rate": 1.0,
       "false_positive_rate": 0.0
     },
     "similarity": {
-      "tp": 3,
+      "tp": 5,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
-      "detection_rate": 0.6,
+      "detection_rate": 0.8333333333333334,
       "false_positive_rate": 0.0
     },
     "combined": {
-      "tp": 5,
+      "tp": 6,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
       "detection_rate": 1.0,
       "false_positive_rate": 0.0
     },
     "latency_ms": {
-      "p50": 0.07099999857018702,
-      "p95": 0.2924999989772914
+      "p50": 0.0866999998834217,
+      "p95": 0.33260000054724514
     },
     "nearest_examples": [
       {
         "id": "ov-001",
-        "similarity": 0.7191389724221873,
-        "nearest_training_id": "ov-004",
-        "classifier_score": 0.9694471649064441
+        "classifier_score": 0.9905948709889254,
+        "similarity_score": 0.6164449934837717,
+        "nearest_training_id": "ov-004-turn-0"
       },
       {
         "id": "rp-003",
-        "similarity": 0.3706535913100034,
-        "nearest_training_id": "ind-003",
-        "classifier_score": 0.747584561775312
+        "classifier_score": 0.8210701389943786,
+        "similarity_score": 0.4428298662196928,
+        "nearest_training_id": "mt-004-turn-1"
       },
       {
         "id": "leak-003",
-        "similarity": 0.4213690671794976,
-        "nearest_training_id": "leak-004",
-        "classifier_score": 0.7704506576113384
+        "classifier_score": 0.8567364893853252,
+        "similarity_score": 0.6748946968032793,
+        "nearest_training_id": "mt-004-turn-1"
       },
       {
         "id": "del-003",
-        "similarity": 0.7191389724221873,
-        "nearest_training_id": "ov-004",
-        "classifier_score": 0.9679725621773799
+        "classifier_score": 0.9902780053938803,
+        "similarity_score": 0.6164449934837717,
+        "nearest_training_id": "ov-004-turn-0"
       },
       {
         "id": "ind-002",
-        "similarity": 0.6415496223387986,
-        "nearest_training_id": "ind-004",
-        "classifier_score": 0.46843381310827
+        "classifier_score": 0.4987729711652446,
+        "similarity_score": 0.6380198480060982,
+        "nearest_training_id": "ind-004-turn-0"
+      },
+      {
+        "id": "mt-002",
+        "classifier_score": 0.7372627169469338,
+        "similarity_score": 0.5956778714811259,
+        "nearest_training_id": "leak-004-turn-0"
       },
       {
         "id": "ben-021",
-        "similarity": 0.2877502975207848,
-        "nearest_training_id": "ind-003",
-        "classifier_score": 0.11737597407554148
+        "classifier_score": 0.17080919347821621,
+        "similarity_score": 0.43960301541123104,
+        "nearest_training_id": "mt-003-turn-1"
       },
       {
         "id": "ben-003",
-        "similarity": 0.42865117500865585,
-        "nearest_training_id": "ind-003",
-        "classifier_score": 0.056493780394082205
+        "classifier_score": 0.05248171588106447,
+        "similarity_score": 0.4356110689371653,
+        "nearest_training_id": "ind-003-turn-0"
       },
       {
         "id": "ben-007",
-        "similarity": 0.4610968265767515,
-        "nearest_training_id": "ind-004",
-        "classifier_score": 0.08520311395312104
+        "classifier_score": 0.1734093925890904,
+        "similarity_score": 0.4021999547318849,
+        "nearest_training_id": "mt-003-turn-0"
       }
     ]
   },
@@ -95,87 +101,93 @@
     "rules": {
       "tp": 4,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
-      "detection_rate": 0.8,
+      "detection_rate": 0.6666666666666666,
       "false_positive_rate": 0.0
     },
     "classifier": {
-      "tp": 5,
+      "tp": 6,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
       "detection_rate": 1.0,
       "false_positive_rate": 0.0
     },
     "similarity": {
-      "tp": 2,
+      "tp": 4,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
-      "detection_rate": 0.4,
+      "detection_rate": 0.6666666666666666,
       "false_positive_rate": 0.0
     },
     "combined": {
-      "tp": 5,
+      "tp": 6,
       "fp": 0,
-      "attack_count": 5,
+      "attack_count": 6,
       "benign_count": 3,
       "detection_rate": 1.0,
       "false_positive_rate": 0.0
     },
     "latency_ms": {
-      "p50": 0.05390000114857685,
-      "p95": 0.08619999971415382
+      "p50": 0.06709999979648273,
+      "p95": 0.1346000008197734
     },
     "nearest_examples": [
       {
         "id": "ov-002",
-        "similarity": 0.4639108885203073,
-        "nearest_training_id": "leak-004",
-        "classifier_score": 0.9230133552169121
+        "classifier_score": 0.9480993207707527,
+        "similarity_score": 0.5502966019099386,
+        "nearest_training_id": "mt-004-turn-1"
       },
       {
         "id": "rp-001",
-        "similarity": 0.6115934842547465,
-        "nearest_training_id": "rp-004",
-        "classifier_score": 0.8749724375114715
+        "classifier_score": 0.8859370808658763,
+        "similarity_score": 0.6122434985392241,
+        "nearest_training_id": "rp-004-turn-0"
       },
       {
         "id": "leak-001",
-        "similarity": 0.3706535913100034,
-        "nearest_training_id": "ind-003",
-        "classifier_score": 0.8281286309742502
+        "classifier_score": 0.9138744055519589,
+        "similarity_score": 0.7117060080888681,
+        "nearest_training_id": "mt-003-turn-1"
       },
       {
         "id": "del-002",
-        "similarity": 0.45275637657487383,
-        "nearest_training_id": "rp-002",
-        "classifier_score": 0.8623002196054503
+        "classifier_score": 0.9150503678773364,
+        "similarity_score": 0.45044108829125973,
+        "nearest_training_id": "rp-002-turn-0"
       },
       {
         "id": "ind-001",
-        "similarity": 0.552522195195342,
-        "nearest_training_id": "ind-004",
-        "classifier_score": 0.3620488504419954
+        "classifier_score": 0.4575062358443643,
+        "similarity_score": 0.5440830184652118,
+        "nearest_training_id": "ind-004-turn-0"
+      },
+      {
+        "id": "mt-001",
+        "classifier_score": 0.7671192540718568,
+        "similarity_score": 0.6696814159021977,
+        "nearest_training_id": "mt-004-turn-1"
       },
       {
         "id": "ben-005",
-        "similarity": 0.3260446928560185,
-        "nearest_training_id": "ind-004",
-        "classifier_score": 0.0986845640150142
+        "classifier_score": 0.14487105313751653,
+        "similarity_score": 0.33372375647934815,
+        "nearest_training_id": "mt-003-turn-0"
       },
       {
         "id": "ben-014",
-        "similarity": 0.3260446928560185,
-        "nearest_training_id": "ind-004",
-        "classifier_score": 0.07001436730630645
+        "classifier_score": 0.09501122567333248,
+        "similarity_score": 0.33372375647934815,
+        "nearest_training_id": "mt-003-turn-0"
       },
       {
         "id": "ben-008",
-        "similarity": 0.42865117500865585,
-        "nearest_training_id": "ind-003",
-        "classifier_score": 0.10706739351086313
+        "classifier_score": 0.1162189705634644,
+        "similarity_score": 0.4356110689371653,
+        "nearest_training_id": "ind-003-turn-0"
       }
     ]
   }

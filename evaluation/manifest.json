@@ -2,20 +2,20 @@
   "seed": "sentinelloop-v1",
   "counts": {
     "train": {
-      "attacks": 10,
+      "attacks": 12,
       "benign": 24
     },
     "validation": {
-      "attacks": 5,
+      "attacks": 6,
       "benign": 3
     },
     "holdout": {
-      "attacks": 5,
+      "attacks": 6,
       "benign": 3
     }
   },
   "locked_holdout_sha256": {
-    "attacks.json": "50c654bd54cd90c738ceecc964172518d5b379c6a42f5291bd4ab3ac0352fe78",
+    "attacks.json": "ce4b662e86a337d55364b35518899b7674e0cb57b58f51f23fde9efab0423e0a",
     "benign.json": "20816689f3c8cc4db6eac54677869e09c842eac8942a6ed0928e57eef4081d1e"
   }
 }

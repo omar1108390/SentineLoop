@@ -11,6 +11,7 @@ class Attack:
     family: str
     technique: str = "seed"
     parent: str = ""
+    turns: tuple[str, ...] = ()
 
 
 def mutate(attack: Attack) -> list[Attack]:

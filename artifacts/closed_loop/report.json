@@ -9,16 +9,21 @@
           "asr": 0.0
         },
         "encoding": {
-          "attempts": 20,
+          "attempts": 24,
           "breaches": 0,
           "asr": 0.0
         },
         "indirect": {
-          "attempts": 18,
+          "attempts": 20,
           "breaches": 0,
           "asr": 0.0
         },
         "leak": {
+          "attempts": 8,
+          "breaches": 0,
+          "asr": 0.0
+        },
+        "multi-turn": {
           "attempts": 8,
           "breaches": 0,
           "asr": 0.0
@@ -40,7 +45,7 @@
       "holdout": {
         "asr": 0.0,
         "breaches": 0,
-        "attack_count": 5,
+        "attack_count": 6,
         "fpr": 0.0,
         "benign_blocked": 0,
         "benign_count": 3,
@@ -56,6 +61,11 @@
             "asr": 0.0
           },
           "leak": {
+            "attempts": 1,
+            "breaches": 0,
+            "asr": 0.0
+          },
+          "multi-turn": {
             "attempts": 1,
             "breaches": 0,
             "asr": 0.0
@@ -82,16 +92,21 @@
           "asr": 0.0
         },
         "encoding": {
-          "attempts": 20,
+          "attempts": 24,
           "breaches": 0,
           "asr": 0.0
         },
         "indirect": {
-          "attempts": 18,
+          "attempts": 20,
           "breaches": 0,
           "asr": 0.0
         },
         "leak": {
+          "attempts": 8,
+          "breaches": 0,
+          "asr": 0.0
+        },
+        "multi-turn": {
           "attempts": 8,
           "breaches": 0,
           "asr": 0.0
@@ -113,7 +128,7 @@
       "holdout": {
         "asr": 0.0,
         "breaches": 0,
-        "attack_count": 5,
+        "attack_count": 6,
         "fpr": 0.0,
         "benign_blocked": 0,
         "benign_count": 3,
@@ -129,6 +144,11 @@
             "asr": 0.0
           },
           "leak": {
+            "attempts": 1,
+            "breaches": 0,
+            "asr": 0.0
+          },
+          "multi-turn": {
             "attempts": 1,
             "breaches": 0,
             "asr": 0.0
@@ -155,16 +175,21 @@
           "asr": 0.0
         },
         "encoding": {
-          "attempts": 20,
+          "attempts": 24,
           "breaches": 0,
           "asr": 0.0
         },
         "indirect": {
-          "attempts": 18,
+          "attempts": 20,
           "breaches": 0,
           "asr": 0.0
         },
         "leak": {
+          "attempts": 8,
+          "breaches": 0,
+          "asr": 0.0
+        },
+        "multi-turn": {
           "attempts": 8,
           "breaches": 0,
           "asr": 0.0
@@ -186,7 +211,7 @@
       "holdout": {
         "asr": 0.0,
         "breaches": 0,
-        "attack_count": 5,
+        "attack_count": 6,
         "fpr": 0.0,
         "benign_blocked": 0,
         "benign_count": 3,
@@ -202,6 +227,11 @@
             "asr": 0.0
           },
           "leak": {
+            "attempts": 1,
+            "breaches": 0,
+            "asr": 0.0
+          },
+          "multi-turn": {
             "attempts": 1,
             "breaches": 0,
             "asr": 0.0
@@ -228,16 +258,21 @@
           "asr": 0.0
         },
         "encoding": {
-          "attempts": 20,
+          "attempts": 24,
           "breaches": 0,
           "asr": 0.0
         },
         "indirect": {
-          "attempts": 18,
+          "attempts": 20,
           "breaches": 0,
           "asr": 0.0
         },
         "leak": {
+          "attempts": 8,
+          "breaches": 0,
+          "asr": 0.0
+        },
+        "multi-turn": {
           "attempts": 8,
           "breaches": 0,
           "asr": 0.0
@@ -259,7 +294,7 @@
       "holdout": {
         "asr": 0.0,
         "breaches": 0,
-        "attack_count": 5,
+        "attack_count": 6,
         "fpr": 0.0,
         "benign_blocked": 0,
         "benign_count": 3,
@@ -275,6 +310,11 @@
             "asr": 0.0
           },
           "leak": {
+            "attempts": 1,
+            "breaches": 0,
+            "asr": 0.0
+          },
+          "multi-turn": {
             "attempts": 1,
             "breaches": 0,
             "asr": 0.0
@@ -301,16 +341,21 @@
           "asr": 0.0
         },
         "encoding": {
-          "attempts": 20,
+          "attempts": 24,
           "breaches": 0,
           "asr": 0.0
         },
         "indirect": {
-          "attempts": 18,
+          "attempts": 20,
           "breaches": 0,
           "asr": 0.0
         },
         "leak": {
+          "attempts": 8,
+          "breaches": 0,
+          "asr": 0.0
+        },
+        "multi-turn": {
           "attempts": 8,
           "breaches": 0,
           "asr": 0.0
@@ -332,7 +377,7 @@
       "holdout": {
         "asr": 0.0,
         "breaches": 0,
-        "attack_count": 5,
+        "attack_count": 6,
         "fpr": 0.0,
         "benign_blocked": 0,
         "benign_count": 3,
@@ -348,6 +393,11 @@
             "asr": 0.0
           },
           "leak": {
+            "attempts": 1,
+            "breaches": 0,
+            "asr": 0.0
+          },
+          "multi-turn": {
             "attempts": 1,
             "breaches": 0,
             "asr": 0.0
@@ -382,6 +432,11 @@
       "breaches": 1,
       "asr": 1.0
     },
+    "multi-turn": {
+      "attempts": 1,
+      "breaches": 1,
+      "asr": 1.0
+    },
     "override": {
       "attempts": 1,
       "breaches": 1,
@@ -394,8 +449,8 @@
     }
   },
   "baseline_holdout_overall": {
-    "attempts": 5,
-    "breaches": 5,
+    "attempts": 6,
+    "breaches": 6,
     "asr": 1.0
   },
   "holdout_lock_verified": true,

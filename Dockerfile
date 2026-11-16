@@ -8,6 +8,7 @@ COPY pyproject.toml README.md PROJECT_DESCRIPTION.md PROJECT_TASKS.md ./
 COPY target_app ./target_app
 COPY firewall ./firewall
 COPY fuzzer ./fuzzer
+COPY evaluation ./evaluation
 RUN pip install --no-cache-dir . \
     && useradd --system --uid 10001 --create-home appuser \
     && chown -R appuser:appuser /app

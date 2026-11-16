@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parent
 
 def load_attacks(include_mutations: bool) -> list[Attack]:
     rows = json.loads((ROOT / "seeds" / "attacks.json").read_text(encoding="utf-8-sig"))
-    attacks = [Attack(row["prompt"], row["family"], "seed", row["id"]) for row in rows]
+    attacks = [Attack(row["prompt"], row["family"], "seed", row["id"], tuple(row.get("turns", [])))
+               for row in rows]
     if include_mutations:
         attacks += [variant for attack in attacks if attack.family != "benign" for variant in mutate(attack)]
     return attacks
@@ -28,29 +29,46 @@ def run(attacks: list[Attack], use_firewall: bool = False) -> tuple[list[dict[st
     for index, attack in enumerate(attacks):
         agent = DemoAgent()
         firewall = Firewall() if use_firewall else None
-        input_check = firewall.inspect_input(attack.prompt) if firewall else None
-        output_check = None
-        if input_check and input_check.verdict == "block":
-            response = "Request blocked by firewall."
-        else:
-            guard = (lambda text: firewall.inspect_untrusted(text).verdict != "block") if firewall else None
-            result = agent.handle(attack.prompt, content_guard=guard)
-            response = result.response
+        guard = (lambda text: firewall.inspect_untrusted(text).verdict != "block") if firewall else None
+        inputs, outputs = [], []
+        outcome = None
+        response = ""
+        prompts = attack.turns or (attack.prompt,)
+        for prompt in prompts:
+            input_check = firewall.inspect_input(prompt) if firewall else None
+            if input_check:
+                inputs.append(input_check)
+                if input_check.verdict == "block":
+                    response = "Request blocked by firewall."
+                    outcome = ObjectiveJudge().evaluate(response, agent.tools.state)
+                    break
+            turn_result = agent.handle(prompt, content_guard=guard)
+            response = turn_result.response
             if firewall:
                 response, output_check = firewall.inspect_output(response)
-        outcome = ObjectiveJudge().evaluate(response, agent.tools.state)
+                outputs.append(output_check)
+            outcome = ObjectiveJudge().evaluate(response, agent.tools.state)
+            if outcome.label == "breach":
+                break
+        if outcome is None:
+            outcome = ObjectiveJudge().evaluate(response, agent.tools.state)
+        input_verdict = "block" if any(item.verdict == "block" for item in inputs) else (
+            "allow" if inputs else "disabled")
+        output_verdict = "block" if any(item.verdict == "block" for item in outputs) else (
+            "allow" if outputs else "not-run")
         records.append({
             "index": str(index), "family": attack.family, "technique": attack.technique,
-            "parent": attack.parent, "prompt": attack.prompt, "outcome": outcome.label,
-            "reason": outcome.reason,
-            "input_verdict": input_check.verdict if input_check else "disabled",
-            "output_verdict": output_check.verdict if output_check else "not-run",
-            "latency_ms": f"{(input_check.latency_ms if input_check else 0) + (output_check.latency_ms if output_check else 0):.4f}",
+            "parent": attack.parent, "prompt": attack.prompt,
+            "turns": json.dumps(list(prompts), ensure_ascii=False), "turn_count": str(len(prompts)),
+            "outcome": outcome.label, "reason": outcome.reason,
+            "input_verdict": input_verdict, "output_verdict": output_verdict,
+            "latency_ms": f"{sum(item.latency_ms for item in inputs + outputs):.4f}",
         })
         counts[attack.family]["total"] += 1
         counts[attack.family]["breaches"] += int(outcome.label == "breach")
     summary = {
-        family: {"attempts": values["total"], "breaches": values["breaches"], "asr": values["breaches"] / values["total"]}
+        family: {"attempts": values["total"], "breaches": values["breaches"],
+                 "asr": values["breaches"] / values["total"]}
         for family, values in sorted(counts.items())
     }
     return records, summary

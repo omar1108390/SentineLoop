@@ -1,4 +1,4 @@
-"""Measure rules, trained L1, TF-IDF L2, and combined detection on validation/holdout."""
+"""Measure rules, trained L1, TF-IDF L2, and combined detection on validation/locked holdout."""
 
 import argparse
 import json
@@ -21,26 +21,45 @@ def percentile(values: list[float], fraction: float) -> float:
     return ordered[max(0, math.ceil(fraction * len(ordered)) - 1)]
 
 
+def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshold: float) -> tuple[dict, float]:
+    prompts = row.get("turns") or [row["prompt"]]
+    start = perf_counter()
+    rule_hit = model_hit = similarity_hit = False
+    model_score, similarity, nearest = 0.0, 0.0, ""
+    for prompt in prompts:
+        matched, _, _ = classify(prompt)
+        rule_hit = rule_hit or matched
+        score = model.score(prompt)
+        if score > model_score:
+            model_score = score
+        score, example = index.score(prompt)
+        if score > similarity:
+            similarity, nearest = score, example
+    elapsed = (perf_counter() - start) * 1000
+    similarity_hit = similarity >= threshold
+    return {"rules": rule_hit, "classifier": model_score >= model.threshold,
+            "similarity": similarity_hit,
+            "combined": rule_hit or model_score >= model.threshold or similarity_hit,
+            "classifier_score": model_score, "similarity_score": similarity,
+            "nearest_training_id": nearest}, elapsed
+
+
 def evaluate_split(name: str, index: SimilarityIndex, model: InjectionModel,
                    similarity_threshold: float) -> dict:
     attacks = json.loads((ROOT / name / "attacks.json").read_text(encoding="utf-8"))
     benign = json.loads((ROOT / name / "benign.json").read_text(encoding="utf-8"))
     results = {layer: {"tp": 0, "fp": 0} for layer in ("rules", "classifier", "similarity", "combined")}
-    timings = []
+    timings, nearest_examples = [], []
     for label, rows in ((1, attacks), (0, benign)):
         for row in rows:
-            started = perf_counter()
-            rule_hit, _, _ = classify(row["prompt"])
-            model_score = model.score(row["prompt"])
-            similarity, nearest = index.score(row["prompt"])
-            timings.append((perf_counter() - started) * 1000)
-            predictions = {"rules": rule_hit, "classifier": model_score >= model.threshold,
-                           "similarity": similarity >= similarity_threshold,
-                           "combined": rule_hit or model_score >= model.threshold or similarity >= similarity_threshold}
-            for layer, prediction in predictions.items():
-                if label and prediction:
+            predictions, elapsed = score_row(row, index, model, similarity_threshold)
+            timings.append(elapsed)
+            nearest_examples.append({"id": row["id"], **{key: predictions[key] for key in
+                                      ("classifier_score", "similarity_score", "nearest_training_id")}})
+            for layer in results:
+                if label and predictions[layer]:
                     results[layer]["tp"] += 1
-                elif not label and prediction:
+                elif not label and predictions[layer]:
                     results[layer]["fp"] += 1
     for counts in results.values():
         counts["attack_count"] = len(attacks)
@@ -48,11 +67,7 @@ def evaluate_split(name: str, index: SimilarityIndex, model: InjectionModel,
         counts["detection_rate"] = counts["tp"] / len(attacks) if attacks else 0.0
         counts["false_positive_rate"] = counts["fp"] / len(benign) if benign else 0.0
     results["latency_ms"] = {"p50": percentile(timings, 0.5), "p95": percentile(timings, 0.95)}
-    results["nearest_examples"] = [
-        {"id": row["id"], "similarity": index.score(row["prompt"])[0],
-         "nearest_training_id": index.score(row["prompt"])[1], "classifier_score": model.score(row["prompt"])}
-        for row in attacks + benign
-    ]
+    results["nearest_examples"] = nearest_examples
     return results
 
 
