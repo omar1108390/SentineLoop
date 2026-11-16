@@ -21,20 +21,25 @@ def percentile(values: list[float], fraction: float) -> float:
     return ordered[max(0, math.ceil(fraction * len(ordered)) - 1)]
 
 
-def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshold: float) -> tuple[dict, float]:
+def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshold: float,
+              enabled_layers: set[str] | None = None) -> tuple[dict, float]:
     prompts = row.get("turns") or [row["prompt"]]
+    enabled = enabled_layers if enabled_layers is not None else {"rules", "classifier", "similarity"}
     start = perf_counter()
     rule_hit = model_hit = similarity_hit = False
     model_score, similarity, nearest = 0.0, 0.0, ""
     for prompt in prompts:
-        matched, _, _ = classify(prompt)
-        rule_hit = rule_hit or matched
-        score = model.score(prompt)
-        if score > model_score:
-            model_score = score
-        score, example = index.score(prompt)
-        if score > similarity:
-            similarity, nearest = score, example
+        if "rules" in enabled:
+            matched, _, _ = classify(prompt)
+            rule_hit = rule_hit or matched
+        if "classifier" in enabled:
+            score = model.score(prompt)
+            if score > model_score:
+                model_score = score
+        if "similarity" in enabled:
+            score, example = index.score(prompt)
+            if score > similarity:
+                similarity, nearest = score, example
     elapsed = (perf_counter() - start) * 1000
     similarity_hit = similarity >= threshold
     return {"rules": rule_hit, "classifier": model_score >= model.threshold,
@@ -45,14 +50,14 @@ def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshol
 
 
 def evaluate_split(name: str, index: SimilarityIndex, model: InjectionModel,
-                   similarity_threshold: float) -> dict:
+                   similarity_threshold: float, enabled_layers: set[str] | None = None) -> dict:
     attacks = json.loads((ROOT / name / "attacks.json").read_text(encoding="utf-8"))
     benign = json.loads((ROOT / name / "benign.json").read_text(encoding="utf-8"))
     results = {layer: {"tp": 0, "fp": 0} for layer in ("rules", "classifier", "similarity", "combined")}
     timings, nearest_examples = [], []
     for label, rows in ((1, attacks), (0, benign)):
         for row in rows:
-            predictions, elapsed = score_row(row, index, model, similarity_threshold)
+            predictions, elapsed = score_row(row, index, model, similarity_threshold, enabled_layers)
             timings.append(elapsed)
             nearest_examples.append({"id": row["id"], **{key: predictions[key] for key in
                                       ("classifier_score", "similarity_score", "nearest_training_id")}})

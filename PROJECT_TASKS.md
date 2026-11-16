@@ -130,7 +130,8 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ## Phase 7: Evaluation and Analysis (Week 6)
 
-- [ ] **P0** **Ablation study:** disable each layer in turn and measure the change in ASR/FPR
+- [x] **P0** Ablate the rules, classifier, and similarity input detectors on validation/locked holdout with ASR/FPR/latency
+- [ ] **P0** Extend ablations to output redaction and tool-policy enforcement
 - [ ] **P0** Compare against baselines (no defense, keyword filter, Prompt Guard / Llama Guard)
 - [ ] **P0** Evaluate on external benchmarks (AgentDojo, BIPIA) for generalization
 - [ ] **P0** Compute confidence intervals and significance tests (SciPy) over repeated runs
