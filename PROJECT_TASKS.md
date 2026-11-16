@@ -151,7 +151,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Provide a reproducibility guide (seeds, versions, dataset splits, hardware)
 - [ ] **P1** Record a 3-5 minute demo video
 - [ ] **P1** Prepare presentation slides
-- [ ] **P1** Add a `SECURITY.md` / responsible-use note
+- [x] **P1** Add a `SECURITY.md` / responsible-use note
 - [ ] **P1** Clean the code, add tests, tag release `v1.0`
 
 ---
