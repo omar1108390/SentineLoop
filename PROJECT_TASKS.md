@@ -134,7 +134,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Extend ablations to output redaction and tool-policy enforcement
 - [ ] **P0** Compare against baselines (no defense, keyword filter, Prompt Guard / Llama Guard)
 - [ ] **P0** Evaluate on external benchmarks (AgentDojo, BIPIA) for generalization
-- [ ] **P0** Compute confidence intervals and significance tests (SciPy) over repeated runs
+- [x] **P0** Compute cluster-bootstrap confidence intervals and paired cluster permutation comparison for the local corpus (external repeated runs pending)
 - [ ] **P0** Measure **utility** (benign task success with vs. without the firewall)
 - [ ] **P1** Report judge accuracy versus hand labels
 - [ ] **P1** Analyze remaining weaknesses: which families still succeed and why
