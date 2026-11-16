@@ -46,13 +46,14 @@ python -m fuzzer.search.genetic --generations 5 --population 20
 python -m fuzzer.search.genetic --generations 5 --population 20 --firewall
 python -m fuzzer.search.map_elites --iterations 200
 python -m fuzzer.search.map_elites --iterations 200 --firewall
+python -m evaluation.layer_report
 python -m evaluation.split_corpus --verify
 python -m hardening.run_round --rounds 4
 ```
 
 The fuzzer runs each prompt in a fresh sandbox and writes JSON/CSV per-attempt details and per-family ASR under `artifacts/`. The genetic search evolves prompt variants with a fixed random seed and stores its generation history and final archive there too. MAP-Elites keeps candidates in a family-by-technique archive and reports coverage and breach cells. The round runner attacks training data, builds an exact-match rule set from observed breaches and benign counterexamples, then measures ASR and FPR on the hash-locked holdout.
 
-The current local corpus has 20 attack seeds and 30 benign prompts. The mutation run recorded baseline ASR of 89/140 (63.6%) and firewall ASR of 0/140. On the locked holdout, the unprotected target breached on 5/5 attacks; the firewall breached on 0/5 and blocked 0/3 benign prompts. Four hardening rounds ran (v0 to v4), but the static firewall found no training bypasses, so it added no learned rules and showed no adaptation gain. These self-generated results validate the pipeline only; they do not establish general security. The firewall is a heuristic prototype, not a trained classifier or production gateway.
+The current local corpus has 20 attack seeds and 30 benign prompts. The mutation run recorded baseline ASR of 89/140 (63.6%) and firewall ASR of 0/140. On the locked holdout, the unprotected target breached on 5/5 attacks; the firewall breached on 0/5 and blocked 0/3 benign prompts. Four hardening rounds ran (v0 to v4), but the static firewall found no training bypasses, so it added no learned rules and showed no adaptation gain. The validation/holdout layer report shows the combined rule-plus-TF-IDF detector catches 5/5 attacks in each split at threshold 0.55, with 0/3 benign prompts flagged in each. These self-generated results validate the pipeline only; they do not establish general security. The firewall is a heuristic prototype, not a trained classifier or production gateway.
 
 ## Code map
 
@@ -60,8 +61,8 @@ The current local corpus has 20 attack seeds and 30 benign prompts. The mutation
 - `target_app/judge.py`: objective canary, tool-call, and state-change checks.
 - `fuzzer/`: categorized seeds, mutation operators, runner, genetic search, and MAP-Elites.
 - `firewall/gateway/app.py`: HTTP API and optional OpenAI-compatible upstream.
-- `firewall/layers/`: normalizer, heuristic and learned exact-match checks, and output guard.
-- `evaluation/`: 30 benign tasks, stratified train/validation/holdout split, and holdout integrity verification.
+- `firewall/layers/`: normalizer, heuristic rules, TF-IDF similarity, exact-match hardening, and output guard.
+- `evaluation/`: 30 benign tasks, stratified train/validation/holdout split, holdout integrity verification, and layer metrics.
 - `hardening/run_round.py`: reproducible attack/judge/analyze/harden/holdout loop.
 - `artifacts/`: sample benchmark output.
 
