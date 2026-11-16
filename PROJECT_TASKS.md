@@ -10,7 +10,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Create the Git repository with the folder structure from the project description
 - [ ] **P0** Write a short `README.md` (goal, how to run)
 - [ ] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
-- [ ] **P0** Create `docker-compose.yml` skeleton (gateway, target app, Redis, PostgreSQL)
+- [x] **P0** Add Docker Compose deployment for the gateway (sandbox target embedded; Redis/PostgreSQL remain pending)
 - [ ] **P0** Decide model strategy: local (Ollama/vLLM) vs. API; test one model end to end
 - [ ] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
 - [ ] **P1** Set up experiment tracking (MLflow or W&B) and dataset versioning (DVC)

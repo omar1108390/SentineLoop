@@ -27,6 +27,15 @@ The gateway checks user prompts and retrieved email content, blocks matching inp
 
 To proxy to an OpenAI-compatible backend, set `SENTINELLOOP_UPSTREAM_URL` to its API base URL (for example one ending in `/v1`), `SENTINELLOOP_MODEL` to its model name, and `SENTINELLOOP_API_KEY` if required. See `.env.example`; the gateway reads these from the process environment and never loads `.env` automatically. This path has not been verified against a live provider.
 
+## Run with Docker Compose
+
+Docker Desktop must be running. From the repository root:
+
+```powershell
+docker compose up --build
+```
+
+This starts the gateway on `http://localhost:8000` with the sandbox backend. Stop it with `Ctrl+C`; run detached with `docker compose up --build -d` and stop with `docker compose down`. The container runs as an unprivileged user with a read-only root filesystem. PostgreSQL and Redis are not wired in yet.
 ## Run the local benchmark
 
 ```powershell
