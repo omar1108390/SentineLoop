@@ -43,6 +43,11 @@ tool_policy = ToolPolicy()
 event_store = default_store()
 
 
+class FuzzerRunRequest(BaseModel):
+    include_mutations: bool = True
+    use_firewall: bool = True
+
+
 class ChatRequest(BaseModel):
     model: str = "sentinelloop-sandbox"
     messages: list[dict[str, Any]] = Field(min_length=1)
@@ -93,6 +98,47 @@ def _upstream_request(payload: dict[str, Any], base_url: str, api_key: str | Non
         raise HTTPException(status_code=502, detail=f"Upstream returned {error.code}: {detail}") from error
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
         raise HTTPException(status_code=502, detail=f"Upstream request failed: {error}") from error
+
+
+def _job_queue():
+    try:
+        from redis import Redis
+        from rq import Queue
+    except ImportError as error:
+        raise HTTPException(status_code=503, detail="Install the jobs extra to enable queued fuzzer runs") from error
+    redis_url = os.getenv("SENTINELLOOP_REDIS_URL", "redis://localhost:6379/0")
+    try:
+        connection = Redis.from_url(redis_url, socket_connect_timeout=2)
+        connection.ping()
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Fuzzer job queue is unavailable") from error
+    return Queue("fuzzer", connection=connection, default_timeout=3600)
+
+
+@app.post("/v1/fuzzer/runs", status_code=202)
+def submit_fuzzer_run(request: FuzzerRunRequest) -> dict[str, str]:
+    queue = _job_queue()
+    job = queue.enqueue(
+        "fuzzer.jobs.run_fuzzer_job",
+        include_mutations=request.include_mutations,
+        use_firewall=request.use_firewall,
+        job_timeout=3600,
+    )
+    return {"job_id": job.id, "status": "queued"}
+
+
+@app.get("/v1/fuzzer/runs/{job_id}")
+def fuzzer_run_status(job_id: str) -> dict[str, Any]:
+    queue = _job_queue()
+    try:
+        job = queue.fetch_job(job_id)
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Could not read job status") from error
+    if job is None:
+        raise HTTPException(status_code=404, detail="Fuzzer job not found")
+    return {"job_id": job.id, "status": job.get_status(refresh=True),
+            "result": job.result if job.is_finished else None,
+            "error": job.exc_info if job.is_failed else None}
 
 
 @app.get("/health")

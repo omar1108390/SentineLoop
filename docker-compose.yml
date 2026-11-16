@@ -1,4 +1,15 @@
 services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -18,10 +29,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
+      SENTINELLOOP_REDIS_URL: redis://redis:6379/0
       SENTINELLOOP_UPSTREAM_URL: ${SENTINELLOOP_UPSTREAM_URL:-}
       SENTINELLOOP_API_KEY: ${SENTINELLOOP_API_KEY:-}
       SENTINELLOOP_MODEL: ${SENTINELLOOP_MODEL:-sentinelloop-sandbox}
@@ -46,8 +60,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
+      SENTINELLOOP_REDIS_URL: redis://redis:6379/0
     volumes:
       - ./artifacts:/app/artifacts
     read_only: true
@@ -57,5 +74,26 @@ services:
       - no-new-privileges:true
     command: ["python", "-m", "fuzzer.runner", "--mutate", "--firewall"]
 
+  worker:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
+      SENTINELLOOP_REDIS_URL: redis://redis:6379/0
+      SENTINELLOOP_ARTIFACTS_DIR: /app/artifacts
+    volumes:
+      - ./artifacts:/app/artifacts
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
+    command: ["rq", "worker", "--url", "redis://redis:6379/0", "fuzzer"]
+
 volumes:
   postgres_data:
+  redis_data:

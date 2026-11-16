@@ -4,14 +4,14 @@ SentinelLoop is a sandbox-only project for measuring and improving defenses agai
 
 ## Run the API gateway
 
-Requires Python 3.11+. Install the package and API dependencies:
+Requires Python 3.11+. Install the package and API dependencies. To enable the asynchronous fuzzer endpoints locally, install the `jobs` extra and run a Redis server:
 
 ```powershell
-python -m pip install -e .
+python -m pip install -e ".[jobs]"
 python -m uvicorn firewall.gateway.app:app --host 127.0.0.1 --port 8000
 ```
 
-Local runs use SQLite at `artifacts/sentinelloop.db` for durable firewall decisions and fuzzer attempts. Docker Compose uses PostgreSQL for those records. The default target backend is the local fake email assistant. Open `http://127.0.0.1:8000/docs` for interactive API docs. The gateway exposes `/health`, `/v1/models`, `/v1/events`, `/v1/metrics`, an OpenAI-compatible `POST /v1/chat/completions` endpoint, and a live dashboard at `http://127.0.0.1:8000/dashboard`.
+Local runs use SQLite at `artifacts/sentinelloop.db` for durable firewall decisions and fuzzer attempts. Docker Compose uses PostgreSQL for those records. The default target backend is the local fake email assistant. Open `http://127.0.0.1:8000/docs` for interactive API docs. The gateway exposes `/health`, `/v1/models`, `/v1/events`, `/v1/metrics`, asynchronous fuzzer run endpoints (`POST /v1/fuzzer/runs` and `GET /v1/fuzzer/runs/{job_id}`), an OpenAI-compatible `POST /v1/chat/completions` endpoint, and a live dashboard at `http://127.0.0.1:8000/dashboard`.
 
 Example request from another PowerShell window:
 
@@ -35,13 +35,20 @@ Docker Desktop must be running. From the repository root:
 docker compose up --build
 ```
 
-This starts the gateway on `http://localhost:8000` with the sandbox backend. Stop it with `Ctrl+C`; run detached with `docker compose up --build -d` and stop with `docker compose down`. The container runs as an unprivileged user with a read-only root filesystem. PostgreSQL is wired into Compose. To run the fuzzer as a one-off Compose task and write its JSON/CSV artifacts plus attempts to PostgreSQL, use:
+This starts the gateway on `http://localhost:8000` with the sandbox backend, plus PostgreSQL, Redis, and a background RQ worker. Stop it with `Ctrl+C`; run detached with `docker compose up --build -d` and stop with `docker compose down`. Containers run as an unprivileged user with a read-only root filesystem. Submit an asynchronous run with `POST /v1/fuzzer/runs` and check it with `GET /v1/fuzzer/runs/{job_id}`. For example:
+
+```powershell
+$job = Invoke-RestMethod http://localhost:8000/v1/fuzzer/runs -Method Post -ContentType "application/json" -Body '{"include_mutations":true,"use_firewall":true}'
+Invoke-RestMethod "http://localhost:8000/v1/fuzzer/runs/$($job.job_id)"
+```
+
+To run the fuzzer as a separate one-off Compose task and write its JSON/CSV artifacts plus attempts to PostgreSQL, use:
 
 ```powershell
 docker compose --profile tools run --rm fuzzer
 ```
 
-Redis-backed task queues are still pending.
+The gateway returns `503` from the queue endpoints if Redis is unavailable.
 
 ## Run the local benchmark
 

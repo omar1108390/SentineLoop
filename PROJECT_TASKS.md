@@ -92,7 +92,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Implement MAP-Elites archive and mutation emitter with breach fitness (custom implementation; pyribs integration pending)
 - [ ] **P1** Visualize the archive as a heatmap (coverage and best fitness per cell)
 - [ ] **P1** Compare GA vs. MAP-Elites on attack diversity and bypass count
-- [ ] **P1** Parallelize attack execution with Celery + Redis (or Ray)
+- [x] **P1** Queue asynchronous fuzzer runs with Redis + RQ worker
 - [ ] **P2** RL fine-tune a small attacker model (TRL, GRPO/PPO) with bypass as reward
 
 **Done when:** the fuzzer finds a diverse set of bypasses against firewall v1 and the archive is visualized.
