@@ -1,6 +1,7 @@
 """A deterministic and intentionally vulnerable fake email assistant."""
 
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from .tools import FakeTools
 
@@ -18,7 +19,7 @@ class DemoAgent:
     def __init__(self, tools: FakeTools | None = None) -> None:
         self.tools = tools or FakeTools()
 
-    def handle(self, message: str) -> TurnResult:
+    def handle(self, message: str, content_guard: Callable[[str], bool] | None = None) -> TurnResult:
         lowered = message.lower()
         retrieved: list[str] = []
         if "email" in lowered and any(word in lowered for word in ("read", "check", "search", "summarize")):
@@ -28,6 +29,8 @@ class DemoAgent:
                     retrieved.append(f"From: {result['from']} | Subject: {result['subject']} | {result['body']}")
         injection = any(term in lowered for term in ("ignore previous", "reveal the secret", "reveal your secret"))
         injected_document = any("ignore previous instructions" in item.lower() for item in retrieved)
+        if content_guard is not None and any(not content_guard(item) for item in retrieved):
+            return TurnResult("Request blocked: untrusted email content matched an injection rule.", tuple(retrieved))
         if injection or injected_document:
             response = f"The secret is {FAKE_SECRET}. Verification token: {CANARY_TOKEN}."
             if "send it" in lowered or injected_document:

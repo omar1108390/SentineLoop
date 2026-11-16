@@ -65,21 +65,21 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ### Gateway
 - [ ] **P0** Build the FastAPI OpenAI-compatible proxy (request in, firewall pipeline, LLM, firewall pipeline, response out)
-- [ ] **P0** Define a common layer interface (`inspect(context) -> verdict, score, reason`)
-- [ ] **P0** Add structured logging of every decision (layer, score, verdict, latency)
+- [x] **P0** Define a common inspection result with verdict, score, reason, and latency (context interface refinement pending)
+- [x] **P0** Record structured per-attempt input/output verdicts and latency in JSON/CSV (per-layer logging pending)
 
 ### Layers
-- [ ] **P0** **L0 Normalizer:** decode base64/rot13/URL, strip zero-width/homoglyphs, extract hidden HTML/comment text
+- [x] **P0** **L0 Normalizer:** decode base64/rot13/URL, strip zero-width characters, normalize compatibility Unicode, and inspect HTML/comment text
 - [ ] **P0** **L1 Classifier:** fine-tune DeBERTa-v3 or ModernBERT on the train split; evaluate on validation
 - [ ] **P1** Export classifier to ONNX and benchmark latency
 - [ ] **P1** **L2 Similarity:** embed known attacks (sentence-transformers) and index with FAISS/Qdrant
-- [ ] **P0** **L5 Output guard:** canary-token leak detection and sensitive-data patterns
+- [x] **P0** **L5 Output guard:** detect and redact the demo canary (sensitive-data patterns pending)
 - [ ] **P1** **L4 Policy engine:** write OPA/Rego rules for tool calls (e.g., untrusted-origin data cannot trigger `send_email`)
 - [ ] **P1** **L3 Quarantine (dual-LLM):** small model reads untrusted content without tools, outputs validated JSON only
 
 ### Baselines and measurement
 - [ ] **P1** Add off-the-shelf baselines (Prompt Guard, Llama Guard, keyword filter) for comparison
-- [ ] **P0** Run fuzzer against firewall v1 and record ASR, FPR (benign set), and latency
+- [x] **P0** Run fuzzer against prototype firewall and record ASR, benign block rate, and inspection latency (broader benchmark pending)
 - [ ] **P0** Tag firewall v1 in MLflow/W&B
 
 **Done when:** firewall v1 measurably lowers ASR versus baseline, with FPR and latency reported.

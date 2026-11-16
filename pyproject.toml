@@ -10,9 +10,10 @@ requires-python = ">=3.11"
 dependencies = []
 
 [tool.setuptools.packages.find]
-include = ["target_app*", "fuzzer*"]
+include = ["target_app*", "fuzzer*", "firewall*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
 
