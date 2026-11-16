@@ -111,7 +111,11 @@ class EventStore:
         values = [(run_id, int(record["index"]), record["family"], record["outcome"],
                    json.dumps(record, ensure_ascii=False), now) for record in records]
         with self._connection() as connection:
-            connection.executemany(sql, values)
+            cursor = connection.cursor()
+            try:
+                cursor.executemany(sql, values)
+            finally:
+                cursor.close()
         return run_id
 
 
