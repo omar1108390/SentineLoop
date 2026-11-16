@@ -15,12 +15,14 @@ def run_fuzzer_job(include_mutations: bool = True, use_firewall: bool = True) ->
     artifacts = Path(os.getenv("SENTINELLOOP_ARTIFACTS_DIR", "artifacts")) / "jobs"
     artifacts.mkdir(parents=True, exist_ok=True)
     prefix = artifacts / job_id
+    artifact_records = [{key: value for key, value in record.items() if key != "run_id"}
+                        for record in records]
     prefix.with_suffix(".json").write_text(
-        json.dumps({"summary": summary, "attempts": records}, indent=2), encoding="utf-8"
+        json.dumps({"summary": summary, "attempts": artifact_records}, indent=2), encoding="utf-8"
     )
-    if records:
+    if artifact_records:
         with prefix.with_suffix(".csv").open("w", newline="", encoding="utf-8") as stream:
-            writer = csv.DictWriter(stream, fieldnames=records[0].keys())
+            writer = csv.DictWriter(stream, fieldnames=artifact_records[0].keys())
             writer.writeheader()
-            writer.writerows(records)
+            writer.writerows(artifact_records)
     return {"run_id": job_id, "summary": summary, "artifact": str(prefix.with_suffix(".json"))}

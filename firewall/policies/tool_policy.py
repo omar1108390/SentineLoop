@@ -39,7 +39,7 @@ class ToolPolicy:
         if any(not isinstance(value, str) or len(value) > self.max_length for value in arguments.values()):
             return PolicyDecision("block", "tool arguments must be short strings", tool_name)
         required = {
-            "read_email": {"email_id"}, "search_files": {"query"},
+            "read_email": {"email_id"}, "search_files": {"query"}, "calendar_view": set(),
             "calendar_add": {"title", "time"}, "send_email": {"to", "subject", "body"},
         }[tool_name]
         if set(arguments) != required:

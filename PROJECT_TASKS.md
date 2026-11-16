@@ -24,7 +24,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ### Target application
 - [x] **P0** Build deterministic sandbox email-assistant agent
-- [x] **P0** Implement in-memory fake tools: `read_email`, `send_email`, `search_files`, `calendar_add`
+- [x] **P0** Implement in-memory fake tools: `read_email`, `send_email`, `search_files`, `calendar_add`, `calendar_view`
 - [x] **P0** Add fake secret and canary to the sandbox agent (prompt-template separation pending)
 - [x] **P0** Add a seeded-email retrieval path for indirect injection
 - [x] **P0** Make fake `send_email` a logged in-memory no-op
@@ -135,7 +135,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Compare against baselines (no defense, keyword filter, Prompt Guard / Llama Guard)
 - [ ] **P0** Evaluate on external benchmarks (AgentDojo, BIPIA) for generalization
 - [x] **P0** Compute cluster-bootstrap confidence intervals and paired cluster permutation comparison for the local corpus (external repeated runs pending)
-- [ ] **P0** Measure **utility** (benign task success with vs. without the firewall)
+- [x] **P0** Measure deterministic benign-task success with vs. without the firewall using 30 manually labeled sandbox prompts
 - [ ] **P1** Report judge accuracy versus hand labels
 - [ ] **P1** Analyze remaining weaknesses: which families still succeed and why
 - [ ] **P1** Compare with existing tools (garak, PyRIT, promptfoo) on the same target

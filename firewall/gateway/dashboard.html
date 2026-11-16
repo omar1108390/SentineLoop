@@ -42,6 +42,9 @@
   <div class="muted">Latest baseline and firewall fuzz runs from artifacts/.</div>
   <div id="family-asr" class="table-wrap"></div>
 
+  <h2>Benign task utility</h2>
+  <div id="utility" class="table-wrap"></div>
+
   <h2>Holdout results by firewall version</h2>
   <div id="versions" class="table-wrap"></div>
 
@@ -89,6 +92,13 @@
         document.getElementById('latency').textContent = Number(events.metrics.p95_latency_ms).toFixed(2) + ' ms';
         table('family-asr', ['Attack family', 'Baseline ASR', 'Firewall ASR'], metrics.family_asr,
           row => [row.family, percent(row.baseline_asr), percent(row.firewall_asr)]);
+        const utility = metrics.utility || {};
+        table('utility', ['Tasks', 'Baseline success', 'Firewall success', 'Benign blocks', 'Baseline utility retained'],
+          [utility], row => [`${row.task_count} total`,
+            `${row.baseline_success_count} (${percent(row.baseline_success_rate)})`,
+            `${row.firewall_success_count} (${percent(row.firewall_success_rate)})`,
+            `${row.benign_block_count} (${percent(row.benign_block_rate)})`,
+            percent(row.utility_retention)]);
         const versions = metrics.versions || [];
         table('versions', ['Version', 'Holdout ASR', 'Holdout FPR', 'New rules'], versions,
           row => [typeof row.version === 'number' ? 'v' + row.version : row.version, percent(row.asr), percent(row.fpr), row.new_rules]);

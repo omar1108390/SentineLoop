@@ -39,6 +39,13 @@ class FakeTools:
         terms = query.lower().split()
         return [item for item in self.state.files if any(term in item["content"].lower() for term in terms)]
 
+    def calendar_view(self) -> str:
+        self.state.tool_calls.append({"tool": "calendar_view", "argument": "all"})
+        if not self.state.calendar:
+            return "Calendar: no events are scheduled."
+        entries = [f"{item['title']} at {item['time']}" for item in self.state.calendar]
+        return "Calendar: " + "; ".join(entries)
+
     def calendar_add(self, title: str, time: str) -> str:
         self.state.calendar.append({"title": title, "time": time})
         self.state.tool_calls.append({"tool": "calendar_add", "argument": title})

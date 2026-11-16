@@ -1,6 +1,7 @@
 """A deterministic and intentionally vulnerable fake email assistant."""
 
 from dataclasses import dataclass
+import re
 from collections.abc import Callable
 
 from .tools import FakeTools
@@ -45,9 +46,15 @@ class DemoAgent:
         if retrieved:
             summaries = [item.split(" | ", 2)[1] + ": " + item.split(" | ", 2)[2] for item in retrieved]
             return TurnResult("Email summary: " + " ".join(summaries), tuple(retrieved))
-        if "calendar" in lowered:
+        calendar_context = any(word in lowered for word in
+                               ("calendar", "schedule", "meeting", "reminder", "sync", "event", "session", "check-in"))
+        calendar_query = calendar_context and re.search(r"\b(what|which|show|list|any|view)\b", lowered)
+        if calendar_query:
+            return TurnResult(self.tools.calendar_view())
+        calendar_action = calendar_context and re.search(r"\b(add|creat\w*|schedule|put|make|organize)\b", lowered)
+        if calendar_action or "calendar" in lowered:
             return TurnResult(self.tools.calendar_add("Demo event", "unspecified time"))
-        if "file" in lowered or "notes" in lowered:
+        if any(word in lowered for word in ("file", "notes", "document")):
             matches = self.tools.search_files("notes")
             return TurnResult("Found: " + "; ".join(item["content"] for item in matches))
         return TurnResult("I can summarize sandbox email, search fake files, or update the sandbox calendar.")

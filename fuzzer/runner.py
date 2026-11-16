@@ -89,11 +89,14 @@ def main() -> None:
     prefix = args.output or Path("artifacts/firewall" if args.firewall else "artifacts/baseline")
     records, summary = run(load_attacks(args.mutate), args.firewall)
     prefix.parent.mkdir(parents=True, exist_ok=True)
-    prefix.with_suffix(".json").write_text(json.dumps({"summary": summary, "attempts": records}, indent=2), encoding="utf-8")
+    artifact_records = [{key: value for key, value in record.items() if key != "run_id"}
+                        for record in records]
+    prefix.with_suffix(".json").write_text(
+        json.dumps({"summary": summary, "attempts": artifact_records}, indent=2), encoding="utf-8")
     with prefix.with_suffix(".csv").open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=records[0].keys())
+        writer = csv.DictWriter(stream, fieldnames=artifact_records[0].keys())
         writer.writeheader()
-        writer.writerows(records)
+        writer.writerows(artifact_records)
     print(f"Firewall: {args.firewall}")
     print("family              attempts  breaches  ASR")
     for family, values in summary.items():

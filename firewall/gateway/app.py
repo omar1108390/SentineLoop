@@ -210,6 +210,7 @@ def benchmark_metrics() -> dict[str, Any]:
     baseline = read_report("baseline.json")
     protected = read_report("firewall.json")
     hardening = read_report("closed_loop/report.json")
+    utility_report = read_report("utility-report.json")
     genetic_baseline = read_report("genetic-baseline.json")
     genetic_firewall = read_report("genetic-firewall.json")
     map_baseline = read_report("map-elites-baseline.json")
@@ -259,7 +260,13 @@ def benchmark_metrics() -> dict[str, Any]:
                 "baseline": map_baseline.get("archive", []),
                 "firewall": map_firewall.get("archive", []),
             },
-            "baseline_holdout": baseline_holdout}
+            "baseline_holdout": baseline_holdout,
+            "utility": {key: utility_report.get(key, default) for key, default in {
+                "task_count": 0, "baseline_success_count": 0, "baseline_success_rate": 0.0,
+                "firewall_success_count": 0, "firewall_success_rate": 0.0,
+                "benign_block_count": 0, "benign_block_rate": 0.0,
+                "baseline_successes_preserved": 0, "utility_retention": 0.0,
+            }.items()}}
 
 
 @app.get("/dashboard", response_class=HTMLResponse)

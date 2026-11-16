@@ -1,6 +1,15 @@
 {
-  "read_only_tools": ["read_email", "search_files"],
-  "approval_required_tools": ["send_email", "calendar_add"],
-  "email_domain_allowlist": ["example.test"],
+  "read_only_tools": [
+    "read_email",
+    "search_files",
+    "calendar_view"
+  ],
+  "approval_required_tools": [
+    "send_email",
+    "calendar_add"
+  ],
+  "email_domain_allowlist": [
+    "example.test"
+  ],
   "max_string_length": 2000
 }

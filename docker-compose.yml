@@ -36,6 +36,7 @@ services:
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_REDIS_URL: redis://redis:6379/0
+      SENTINELLOOP_SIMILARITY_THRESHOLD: ${SENTINELLOOP_SIMILARITY_THRESHOLD:-0.55}
       SENTINELLOOP_UPSTREAM_URL: ${SENTINELLOOP_UPSTREAM_URL:-}
       SENTINELLOOP_API_KEY: ${SENTINELLOOP_API_KEY:-}
       SENTINELLOOP_MODEL: ${SENTINELLOOP_MODEL:-sentinelloop-sandbox}
@@ -65,6 +66,7 @@ services:
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_REDIS_URL: redis://redis:6379/0
+      SENTINELLOOP_SIMILARITY_THRESHOLD: ${SENTINELLOOP_SIMILARITY_THRESHOLD:-0.55}
     volumes:
       - ./artifacts:/app/artifacts
     read_only: true
@@ -86,6 +88,7 @@ services:
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_REDIS_URL: redis://redis:6379/0
+      SENTINELLOOP_SIMILARITY_THRESHOLD: ${SENTINELLOOP_SIMILARITY_THRESHOLD:-0.55}
       SENTINELLOOP_ARTIFACTS_DIR: /app/artifacts
     volumes:
       - ./artifacts:/app/artifacts
