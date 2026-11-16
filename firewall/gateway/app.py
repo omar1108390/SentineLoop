@@ -268,7 +268,7 @@ def dashboard() -> str:
     return page.read_text(encoding="utf-8")
 
 
-@app.post("/v1/chat/completions")
+@app.post("/v1/chat/completions", response_model=None)
 def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
     request_id = uuid.uuid4().hex
     firewall = Firewall()
