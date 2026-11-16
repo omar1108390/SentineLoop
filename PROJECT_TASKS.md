@@ -10,7 +10,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Create the Git repository with the folder structure from the project description
 - [ ] **P0** Write a short `README.md` (goal, how to run)
 - [ ] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
-- [x] **P0** Add Docker Compose gateway, PostgreSQL, and fuzzer profile (sandbox target embedded; Redis remains pending)
+- [x] **P0** Add Docker Compose gateway, PostgreSQL, Redis, RQ worker, and fuzzer profile (sandbox target embedded)
 - [ ] **P0** Decide model strategy: local (Ollama/vLLM) vs. API; test one model end to end
 - [ ] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
 - [ ] **P1** Set up experiment tracking (MLflow or W&B) and dataset versioning (DVC)
@@ -90,7 +90,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 - [x] **P0** Define MAP-Elites behavior dimensions as attack family x mutation technique
 - [x] **P0** Implement MAP-Elites archive and mutation emitter with breach fitness (custom implementation; pyribs integration pending)
-- [ ] **P1** Visualize the archive as a heatmap (coverage and best fitness per cell)
+- [x] **P1** Visualize archive cells by family and mutation technique with best fitness and outcome
 - [ ] **P1** Compare GA vs. MAP-Elites on attack diversity and bypass count
 - [x] **P1** Queue asynchronous fuzzer runs with Redis + RQ worker
 - [ ] **P2** RL fine-tune a small attacker model (TRL, GRPO/PPO) with bypass as reward
@@ -118,7 +118,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 - [x] **P0** Dashboard panel: genetic-search ASR by generation and holdout ASR/FPR by firewall version
 - [x] **P0** Dashboard panel: live firewall inspection feed (allowed / blocked; attempt outcomes pending)
-- [x] **P1** Dashboard panel: attack-family vs. defense-layer heatmap (counts from latest firewall fuzzer run)
+- [x] **P1** Dashboard panels: attack-family vs. defense-layer activity and MAP-Elites archive-cell heatmap
 - [x] **P1** Dashboard panel: top baseline breaches with payload and judge reason (failing-layer attribution pending)
 - [x] **P1** Dashboard panel: live inspection latency p95 and holdout FPR by version (full benchmark p50/p95 panels pending)
 - [ ] **P1** Add OpenTelemetry tracing and Langfuse/Phoenix for LLM traces

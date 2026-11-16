@@ -229,6 +229,11 @@ def benchmark_metrics() -> dict[str, Any]:
                                 "firewall": genetic_firewall.get("history", [])},
             "map_elites_history": {"baseline": map_baseline.get("history", []),
                                    "firewall": map_firewall.get("history", [])},
+            "map_elites_archive": {
+                "dimensions": map_baseline.get("dimensions", map_firewall.get("dimensions", {})),
+                "baseline": map_baseline.get("archive", []),
+                "firewall": map_firewall.get("archive", []),
+            },
             "baseline_holdout": baseline_holdout}
 
 

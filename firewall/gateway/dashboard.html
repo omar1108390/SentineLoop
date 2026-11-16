@@ -20,6 +20,10 @@
     article { display: grid; grid-template-columns: 105px 90px 1fr; gap: 10px; }
     .breach { display: block; } .block { color: #fca5a5; } .allow { color: #86efac; }
     .bar { height: 8px; min-width: 2px; border-radius: 5px; background: #60a5fa; display: inline-block; }
+    #archive-heatmap td { min-width: 100px; }
+    .cell-hit { color: #fecaca; background-color: rgba(239,68,68,.25); }
+    .cell-clear { color: #bbf7d0; background-color: rgba(34,197,94,.12); }
+    .cell-empty { color: #9ca3af; }
     code { color: #c4b5fd; }
     @media(max-width:600px) { article { grid-template-columns: 1fr 1fr; } article .reason { grid-column: 1/-1; } }
   </style>
@@ -46,6 +50,9 @@
 
   <h2>MAP-Elites archive progress</h2>
   <div id="map-progress" class="table-wrap"></div>
+  <h3>Archive cells: family × technique</h3>
+  <div class="muted">Each cell reports the best stored candidate and its judge outcome for baseline and firewall runs.</div>
+  <div id="archive-heatmap" class="table-wrap"></div>
   <h2>Family and defense-layer activity</h2>
   <div id="heatmap" class="table-wrap"></div>
 
@@ -97,7 +104,44 @@
         const mapRows = mapBase.map(row => ({base: row, firewall: mapFirewall.get(row.iteration) || {}}));
         table('map-progress', ['Iteration', 'Baseline coverage', 'Baseline breach cells', 'Firewall coverage', 'Firewall breach cells'], mapRows,
           row => [row.base.iteration, row.base.coverage, row.base.breach_cells,
-            row.firewall.coverage || 0, row.firewall.breach_cells || 0]);        table('heatmap', ['Family', 'Layer', 'Inspections', 'Blocked'], metrics.layer_heatmap || [],
+            row.firewall.coverage || 0, row.firewall.breach_cells || 0]);
+        const archive = metrics.map_elites_archive || {};
+        const dimensions = archive.dimensions || {};
+        const baseCells = new Map((archive.baseline || []).map(cell => [cell.family + '|' + cell.technique, cell]));
+        const firewallCells = new Map((archive.firewall || []).map(cell => [cell.family + '|' + cell.technique, cell]));
+        const archiveRows = [];
+        for (const family of dimensions.family || []) for (const technique of dimensions.technique || []) {
+          const key = family + '|' + technique;
+          archiveRows.push({family, technique, baseline: baseCells.get(key), firewall: firewallCells.get(key)});
+        }
+        const archiveRoot = document.getElementById('archive-heatmap'); archiveRoot.replaceChildren();
+        if (!archiveRows.length) {
+          archiveRoot.textContent = 'No MAP-Elites archive found. Run the MAP-Elites commands from the README.';
+        } else {
+          const node = document.createElement('table');
+          const headings = ['Family', 'Technique', 'Baseline best', 'Baseline outcome', 'Firewall best', 'Firewall outcome'];
+          const head = document.createElement('tr');
+          for (const title of headings) { const cell = document.createElement('th'); cell.textContent = title; head.append(cell); }
+          const thead = document.createElement('thead'); thead.append(head); node.append(thead);
+          const body = document.createElement('tbody');
+          for (const item of archiveRows) {
+            const tr = document.createElement('tr');
+            const values = [item.family, item.technique,
+              item.baseline ? Number(item.baseline.fitness).toFixed(2) : '—',
+              item.baseline?.outcome || 'empty',
+              item.firewall ? Number(item.firewall.fitness).toFixed(2) : '—',
+              item.firewall?.outcome || 'empty'];
+            for (let index = 0; index < values.length; index++) {
+              const td = document.createElement('td'); td.textContent = values[index];
+              if (index === 2 || index === 3) td.className = !item.baseline ? 'cell-empty' : item.baseline.outcome === 'breach' ? 'cell-hit' : 'cell-clear';
+              if (index === 4 || index === 5) td.className = !item.firewall ? 'cell-empty' : item.firewall.outcome === 'breach' ? 'cell-hit' : 'cell-clear';
+              tr.append(td);
+            }
+            body.append(tr);
+          }
+          node.append(body); archiveRoot.append(node);
+        }
+        table('heatmap', ['Family', 'Layer', 'Inspections', 'Blocked'], metrics.layer_heatmap || [],
           row => [row.family, row.layer, row.attempts, row.blocked]);
         document.querySelectorAll('#heatmap tbody tr').forEach((tr, index) => {
           const row = metrics.layer_heatmap[index]; const rate = row.blocked / Math.max(1, row.attempts);
