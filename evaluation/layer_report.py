@@ -78,7 +78,7 @@ def evaluate_split(name: str, index: SimilarityIndex, model: InjectionModel,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--threshold", type=float, default=0.55)
+    parser.add_argument("--threshold", type=float, default=0.95)
     parser.add_argument("--output", type=Path, default=Path("artifacts/layer-evaluation.json"))
     args = parser.parse_args()
     if not verify():
