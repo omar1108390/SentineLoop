@@ -74,7 +74,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P1** Export classifier to ONNX and benchmark latency
 - [x] **P1** **L2 Similarity:** add TF-IDF cosine index over train attacks (sentence-transformer dense embeddings and FAISS/Qdrant pending)
 - [x] **P0** **L5 Output guard:** detect and redact the fake secret and canary (broader sensitive-data patterns pending)
-- [ ] **P1** **L4 Policy engine:** write OPA/Rego rules for tool calls (e.g., untrusted-origin data cannot trigger `send_email`)
+- [x] **P1** **L4 Policy engine:** add a Python allowlist for sandbox tool calls, strict arguments, provenance, and explicit approval (OPA/Rego runtime pending)
 - [ ] **P1** **L3 Quarantine (dual-LLM):** small model reads untrusted content without tools, outputs validated JSON only
 
 ### Baselines and measurement

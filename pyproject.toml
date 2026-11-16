@@ -18,6 +18,7 @@ target-version = "py311"
 
 [tool.setuptools.package-data]
 "firewall.gateway" = ["dashboard.html"]
+"firewall.policies" = ["tool_policy.json"]
 fuzzer = ["seeds/*.json"]
 evaluation = ["benign/*.json", "train/*.json", "validation/*.json", "holdout/*.json"]
 

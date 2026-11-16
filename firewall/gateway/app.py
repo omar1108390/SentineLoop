@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from firewall import Firewall, Inspection
+from firewall.policies.tool_policy import ToolPolicy
 from target_app.agent import DemoAgent
 
 
@@ -37,6 +38,7 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 events: deque[dict[str, Any]] = deque(maxlen=500)
 app = FastAPI(title="SentinelLoop Firewall Gateway", version="0.1.0")
+tool_policy = ToolPolicy()
 
 
 class ChatRequest(BaseModel):
@@ -146,11 +148,24 @@ def chat_completions(request: ChatRequest) -> dict[str, Any]:
         response_message["content"] = filtered
         # Do not return tool calls to clients without an explicit authorization policy.
         if response_message.get("tool_calls") or response_message.get("function_call"):
+            calls = response_message.get("tool_calls", [])
+            if response_message.get("function_call"):
+                calls = [{"function": response_message["function_call"]}]
+            policy_reasons = []
+            for call in calls:
+                function = call.get("function", {}) if isinstance(call, dict) else {}
+                decision = tool_policy.authorize(function.get("name", ""), function.get("arguments", "{}"))
+                policy_reasons.append(decision.reason if decision.verdict == "block"
+                                      else "policy allows read-only call; execution is not configured")
+                _log_inspection(request_id, Inspection("L4", decision.verdict,
+                                0.0 if decision.verdict == "allow" else 1.0,
+                                decision.reason, 0.0))
             response_message.pop("tool_calls", None)
             response_message.pop("function_call", None)
-            response_message["content"] = "Tool call blocked: no tool execution policy is configured."
+            reason = "; ".join(policy_reasons) or "tool execution is not configured"
+            response_message["content"] = "Tool call blocked: " + reason
             _log_inspection(request_id, Inspection("L5", "block", 1.0,
-                            "upstream requested a tool call; execution is disabled", 0.0))
+                            "gateway does not forward model-generated tool calls", 0.0))
             result["choices"][0]["finish_reason"] = "content_filter"
         elif output_check.verdict == "block":
             result["choices"][0]["finish_reason"] = "content_filter"

@@ -23,7 +23,7 @@ $body = @{
 Invoke-RestMethod http://127.0.0.1:8000/v1/chat/completions -Method Post -ContentType "application/json" -Body $body
 ```
 
-The gateway checks user prompts and retrieved email content, blocks matching inputs, redacts the fake secret/canary in outputs, and logs each inspection as JSON. The dashboard shows the last 500 in-memory inspection decisions, block/allow counts, p95 inspection latency, and a live feed; restarting the service clears it. Streaming is not implemented. Upstream-generated tool calls are blocked because no tool authorization policy is configured.
+The gateway checks user prompts and retrieved email content, blocks matching inputs, redacts the fake secret/canary in outputs, and logs each inspection as JSON. The dashboard shows the last 500 in-memory inspection decisions, block/allow counts, p95 inspection latency, and a live feed; restarting the service clears it. Streaming is not implemented. Upstream-generated tool calls pass the L4 sandbox allowlist and argument checks; side-effect calls require trusted approval. Calls are still withheld from clients because a sandbox tool executor is not connected.
 
 To proxy to an OpenAI-compatible backend, set `SENTINELLOOP_UPSTREAM_URL` to its API base URL (for example one ending in `/v1`), `SENTINELLOOP_MODEL` to its model name, and `SENTINELLOOP_API_KEY` if required. See `.env.example`; the gateway reads these from the process environment and never loads `.env` automatically. This path has not been verified against a live provider.
 
@@ -62,6 +62,7 @@ The current local corpus has 20 attack seeds and 30 benign prompts. The mutation
 - `fuzzer/`: categorized seeds, mutation operators, runner, genetic search, and MAP-Elites.
 - `firewall/gateway/app.py`: HTTP API and optional OpenAI-compatible upstream.
 - `firewall/layers/`: normalizer, heuristic rules, TF-IDF similarity, exact-match hardening, and output guard.
+- `firewall/policies/`: allowlisted fake-tool arguments and approval rules.
 - `evaluation/`: 30 benign tasks, stratified train/validation/holdout split, holdout integrity verification, and layer metrics.
 - `hardening/run_round.py`: reproducible attack/judge/analyze/harden/holdout loop.
 - `artifacts/`: sample benchmark output.
