@@ -7,7 +7,7 @@ name = "sentinelloop"
 version = "0.1.0"
 description = "A sandboxed prompt-injection firewall and red-team benchmark"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["fastapi>=0.110,<1", "uvicorn[standard]>=0.29,<1"]
 
 [tool.setuptools.packages.find]
 include = ["target_app*", "fuzzer*", "firewall*"]
@@ -15,5 +15,6 @@ include = ["target_app*", "fuzzer*", "firewall*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
 
 

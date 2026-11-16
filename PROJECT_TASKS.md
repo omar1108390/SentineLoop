@@ -64,16 +64,16 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ## Phase 3: Firewall v1 (Week 3)
 
 ### Gateway
-- [ ] **P0** Build the FastAPI OpenAI-compatible proxy (request in, firewall pipeline, LLM, firewall pipeline, response out)
+- [x] **P0** Build the FastAPI OpenAI-compatible proxy with sandbox default, optional upstream, input/output firewall checks (streaming remains pending)
 - [x] **P0** Define a common inspection result with verdict, score, reason, and latency (context interface refinement pending)
-- [x] **P0** Record structured per-attempt input/output verdicts and latency in JSON/CSV (per-layer logging pending)
+- [x] **P0** Emit JSON decision logs with layer, score, verdict, reason, and latency
 
 ### Layers
 - [x] **P0** **L0 Normalizer:** decode base64/rot13/URL, strip zero-width characters, normalize compatibility Unicode, and inspect HTML/comment text
 - [ ] **P0** **L1 Classifier:** fine-tune DeBERTa-v3 or ModernBERT on the train split; evaluate on validation
 - [ ] **P1** Export classifier to ONNX and benchmark latency
 - [ ] **P1** **L2 Similarity:** embed known attacks (sentence-transformers) and index with FAISS/Qdrant
-- [x] **P0** **L5 Output guard:** detect and redact the demo canary (sensitive-data patterns pending)
+- [x] **P0** **L5 Output guard:** detect and redact the fake secret and canary (broader sensitive-data patterns pending)
 - [ ] **P1** **L4 Policy engine:** write OPA/Rego rules for tool calls (e.g., untrusted-origin data cannot trigger `send_email`)
 - [ ] **P1** **L3 Quarantine (dual-LLM):** small model reads untrusted content without tools, outputs validated JSON only
 
