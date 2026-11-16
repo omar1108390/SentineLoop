@@ -35,7 +35,7 @@ class Firewall:
         self.similarity_index = similarity_index or default_index()
         self.injection_model = injection_model or default_model()
         self.similarity_threshold = threshold if threshold is not None else float(
-            os.getenv("SENTINELLOOP_SIMILARITY_THRESHOLD", "0.95"))
+            os.getenv("SENTINELLOOP_SIMILARITY_THRESHOLD", "0.55"))
 
     def inspect_input(self, text: str) -> Inspection:
         started = perf_counter()

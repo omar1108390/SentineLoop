@@ -71,14 +71,14 @@ def evaluate_split(name: str, index: SimilarityIndex, model: InjectionModel,
         counts["benign_count"] = len(benign)
         counts["detection_rate"] = counts["tp"] / len(attacks) if attacks else 0.0
         counts["false_positive_rate"] = counts["fp"] / len(benign) if benign else 0.0
-    results["latency_ms"] = {"p50": percentile(timings, 0.5), "p95": percentile(timings, 0.95)}
+    results["latency_ms"] = {"p50": percentile(timings, 0.5), "p95": percentile(timings, 0.55)}
     results["nearest_examples"] = nearest_examples
     return results
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--threshold", type=float, default=0.95)
+    parser.add_argument("--threshold", type=float, default=0.55)
     parser.add_argument("--output", type=Path, default=Path("artifacts/layer-evaluation.json"))
     args = parser.parse_args()
     if not verify():

@@ -1,4 +1,4 @@
-"""L2 lexical TF-IDF similarity index built from training attacks only."""
+"""L2 word-and-bigram TF-IDF similarity index built from training attacks only."""
 
 import json
 import math
@@ -12,7 +12,9 @@ from .normalizer import normalize
 
 
 def _tokens(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9]{2,}", normalize(text))
+    words = re.findall(r"[a-z0-9]{2,}", normalize(text))
+    bigrams = [f"{left}_{right}" for left, right in zip(words, words[1:])]
+    return words + bigrams
 
 
 class SimilarityIndex:
