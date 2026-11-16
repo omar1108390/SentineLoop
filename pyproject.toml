@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = ["fastapi>=0.110,<1", "uvicorn[standard]>=0.29,<1"]
 
 [tool.setuptools.packages.find]
-include = ["target_app*", "fuzzer*", "firewall*"]
+include = ["target_app*", "fuzzer*", "firewall*", "evaluation*", "hardening*"]
 
 [tool.ruff]
 line-length = 100
@@ -18,6 +18,9 @@ target-version = "py311"
 
 [tool.setuptools.package-data]
 "firewall.gateway" = ["dashboard.html"]
+fuzzer = ["seeds/*.json"]
+evaluation = ["benign/*.json", "train/*.json", "validation/*.json", "holdout/*.json"]
+
 
 
 

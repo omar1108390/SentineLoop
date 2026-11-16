@@ -13,8 +13,11 @@ PATTERNS = (
 )
 
 
-def classify(text: str) -> tuple[bool, float, str]:
+def classify(text: str, exact_rules: tuple[str, ...] = ()) -> tuple[bool, float, str]:
     normalized = normalize(text)
+    for signature in exact_rules:
+        if signature and signature in normalized:
+            return True, 1.0, "matched hardened exact-text rule"
     for pattern in PATTERNS:
         if re.search(pattern, normalized):
             return True, 0.95, f"matched injection rule: {pattern}"

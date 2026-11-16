@@ -46,8 +46,8 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ### Data
 - [x] **P0** Create local seed corpus for the sandbox target (external datasets remain pending)
 - [x] **P0** Categorize initial seeds into override, role-play, leak, delimiter, indirect, and benign families (additional families pending)
-- [ ] **P0** Split into **train / validation / holdout** and lock the holdout set
-- [ ] **P1** Build a benign dataset (realistic user requests, documents, emails)
+- [x] **P0** Split the local corpus into stratified train / validation / holdout files and verify holdout SHA-256 lock (external benchmark splits pending)
+- [x] **P1** Add 30 sandbox benign request prompts (benign documents/emails pending)
 
 ### Fuzzer v1
 - [x] **P0** Implement paraphrase, base64/ROT13, Unicode, document wrapping, and distractor mutations (translation pending)
@@ -101,12 +101,12 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ## Phase 5: Closed Loop and Hardening (Week 4-5)
 
-- [ ] **P0** Build the **bypass analysis** step: cluster successful attacks and identify failing layers
-- [ ] **P0** Build the **dataset builder**: bypasses plus matching benign counterexamples become new training data
-- [ ] **P0** Retrain the classifier and add new normalizer/policy rules, producing firewall v2
-- [ ] **P0** Evaluate v2 on the **holdout set** (never used in hardening) to detect overfitting
-- [ ] **P0** Write a single `run_round` command that executes: attack, judge, analyze, harden, re-evaluate
-- [ ] **P0** Run at least 3-5 rounds (v0 to v4) and record all metrics
+- [x] **P0** Summarize training breaches by family and record layer verdicts (clustering pending)
+- [x] **P0** Build a training dataset from observed breaches plus benign counterexamples
+- [x] **P0** Add exact normalized attack signatures as a rule hardening version (classifier retraining pending)
+- [x] **P0** Evaluate each rule version on SHA-256-locked holdout data that is excluded from hardening
+- [x] **P0** Implement one command for attack, judge, analyze, harden, and holdout re-evaluation
+- [x] **P0** Run four rounds (v0 to v4) and record metrics (no bypasses were found, so no hardening rules were added)
 - [ ] **P1** Automate the loop in GitHub Actions as a red-team regression test
 - [ ] **P2** Add taint tracking / provenance labels enforced at tool-call time
 
