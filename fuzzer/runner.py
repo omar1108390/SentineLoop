@@ -62,6 +62,8 @@ def run(attacks: list[Attack], use_firewall: bool = False) -> tuple[list[dict[st
             "turns": json.dumps(list(prompts), ensure_ascii=False), "turn_count": str(len(prompts)),
             "outcome": outcome.label, "reason": outcome.reason,
             "input_verdict": input_verdict, "output_verdict": output_verdict,
+            "input_layers": json.dumps([{"layer": item.layer, "verdict": item.verdict} for item in inputs]),
+            "output_layers": json.dumps([{"layer": item.layer, "verdict": item.verdict} for item in outputs]),
             "latency_ms": f"{sum(item.latency_ms for item in inputs + outputs):.4f}",
         })
         counts[attack.family]["total"] += 1

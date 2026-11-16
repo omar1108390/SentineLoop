@@ -113,6 +113,69 @@ def recent_events(limit: int = 100) -> dict[str, Any]:
     }}
 
 
+@app.get("/v1/metrics")
+def benchmark_metrics() -> dict[str, Any]:
+    artifacts = Path(os.getenv("SENTINELLOOP_ARTIFACTS_DIR", str(Path.cwd() / "artifacts")))
+
+    def read_report(name: str) -> dict[str, Any]:
+        path = artifacts / name
+        if not path.is_file():
+            return {}
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    baseline = read_report("baseline.json")
+    protected = read_report("firewall.json")
+    hardening = read_report("closed_loop/report.json")
+    genetic_baseline = read_report("genetic-baseline.json")
+    genetic_firewall = read_report("genetic-firewall.json")
+    map_baseline = read_report("map-elites-baseline.json")
+    map_firewall = read_report("map-elites-firewall.json")
+    family_rows = []
+    families = set(baseline.get("summary", {})) | set(protected.get("summary", {}))
+    for family in sorted(families):
+        family_rows.append({"family": family,
+                            "baseline_asr": baseline.get("summary", {}).get(family, {}).get("asr", 0.0),
+                            "firewall_asr": protected.get("summary", {}).get(family, {}).get("asr", 0.0)})
+
+    layer_counts: dict[tuple[str, str], dict[str, int]] = {}
+    for attempt in protected.get("attempts", []):
+        try:
+            layers = json.loads(attempt.get("input_layers", "[]"))
+        except (TypeError, json.JSONDecodeError):
+            layers = []
+        for check in layers:
+            layer = check.get("layer", "unknown") if isinstance(check, dict) else check
+            key = (attempt.get("family", "unknown"), layer)
+            cell = layer_counts.setdefault(key, {"attempts": 0, "blocked": 0})
+            cell["attempts"] += 1
+            verdict = check.get("verdict", attempt.get("input_verdict")) if isinstance(check, dict) else attempt.get("input_verdict")
+            cell["blocked"] += int(verdict == "block")
+    heatmap = [{"family": family, "layer": layer, **counts}
+               for (family, layer), counts in sorted(layer_counts.items())]
+
+    breaches = [attempt for attempt in baseline.get("attempts", []) if attempt.get("outcome") == "breach"]
+    top_breaches = [{"family": row.get("family", "unknown"), "prompt": row.get("prompt", ""),
+                     "reason": row.get("reason", "")}
+                    for row in breaches[:5]]
+    baseline_holdout = hardening.get("baseline_holdout_overall", {})
+    versions = ([{"version": "baseline", "asr": baseline_holdout.get("asr", 0.0),
+                 "fpr": 0.0, "new_rules": 0}] +
+                [{"version": row.get("version"), "asr": row.get("holdout", {}).get("asr", 0.0),
+                 "fpr": row.get("holdout", {}).get("fpr", 0.0),
+                 "new_rules": row.get("hardening_rules_added", 0)}
+                for row in hardening.get("rounds", [])])
+    return {"family_asr": family_rows, "versions": versions, "layer_heatmap": heatmap,
+            "top_breaches": top_breaches,
+            "genetic_history": {"baseline": genetic_baseline.get("history", []),
+                                "firewall": genetic_firewall.get("history", [])},
+            "map_elites_history": {"baseline": map_baseline.get("history", []),
+                                   "firewall": map_firewall.get("history", [])},
+            "baseline_holdout": baseline_holdout}
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard() -> str:
     page = Path(__file__).with_name("dashboard.html")
@@ -183,8 +246,9 @@ def chat_completions(request: ChatRequest) -> dict[str, Any]:
         if output_check.verdict == "block":
             break
     if not untrusted:
-        response = "I can summarize sandbox email, search fake files, or update the sandbox calendar."    finish_reason = "content_filter" if output_check.verdict == "block" else "stop"
-    return _completion(request.model, filtered, finish_reason)
+        response = "I can summarize sandbox email, search fake files, or update the sandbox calendar."
+    finish_reason = "content_filter" if output_check and output_check.verdict == "block" else "stop"
+    return _completion(request.model, response, finish_reason)
 
 
 def _inspect_untrusted(firewall: Firewall, request_id: str, text: str) -> bool:

@@ -116,11 +116,11 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ## Phase 6: Dashboard and Observability (Week 5)
 
-- [ ] **P0** Dashboard panel: ASR per generation and per firewall version
-- [ ] **P0** Dashboard panel: live firewall inspection feed (allowed / blocked; attempt outcomes pending)
-- [ ] **P1** Dashboard panel: attack-family vs. defense-layer heatmap
-- [ ] **P1** Dashboard panel: top breaches (payload, failing layer)
-- [ ] **P1** Dashboard panel: inspection latency p95 (FPR and p50/p95 benchmark panels pending)
+- [x] **P0** Dashboard panel: genetic-search ASR by generation and holdout ASR/FPR by firewall version
+- [x] **P0** Dashboard panel: live firewall inspection feed (allowed / blocked; attempt outcomes pending)
+- [x] **P1** Dashboard panel: attack-family vs. defense-layer heatmap (counts from latest firewall fuzzer run)
+- [x] **P1** Dashboard panel: top baseline breaches with payload and judge reason (failing-layer attribution pending)
+- [x] **P1** Dashboard panel: live inspection latency p95 and holdout FPR by version (full benchmark p50/p95 panels pending)
 - [ ] **P1** Add OpenTelemetry tracing and Langfuse/Phoenix for LLM traces
 - [ ] **P2** Custom Next.js + WebSocket live dashboard (instead of Grafana only)
 

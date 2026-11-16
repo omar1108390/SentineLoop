@@ -8,6 +8,8 @@ services:
       SENTINELLOOP_API_KEY: ${SENTINELLOOP_API_KEY:-}
       SENTINELLOOP_MODEL: ${SENTINELLOOP_MODEL:-sentinelloop-sandbox}
     restart: unless-stopped
+    volumes:
+      - ./artifacts:/app/artifacts:ro
     read_only: true
     tmpfs:
       - /tmp:size=16m

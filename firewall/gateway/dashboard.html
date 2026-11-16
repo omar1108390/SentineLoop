@@ -5,48 +5,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SentinelLoop Firewall</title>
   <style>
-    :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #111827; color: #e5e7eb; }
-    body { max-width: 1050px; margin: 36px auto; padding: 0 20px; }
-    h1 { margin-bottom: 4px; } .muted { color: #9ca3af; }
+    :root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #111827; color: #e5e7eb; }
+    body { max-width: 1120px; margin: 32px auto; padding: 0 20px 48px; }
+    h1 { margin-bottom: 4px; } h2 { margin-top: 30px; }
+    .muted, .empty { color: #9ca3af; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 12px; margin: 24px 0; }
     .card, article { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 16px; }
     .value { font-size: 1.8rem; font-weight: 700; } .label { color: #9ca3af; }
-    #feed { display: grid; gap: 8px; } article { display: grid; grid-template-columns: 100px 100px 1fr; gap: 12px; }
-    .block { color: #fca5a5; } .allow { color: #86efac; }
+    .table-wrap { overflow-x: auto; border: 1px solid #374151; border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; background: #1f2937; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #374151; }
+    th { color: #9ca3af; font-weight: 600; }
+    #feed, #breaches { display: grid; gap: 8px; }
+    article { display: grid; grid-template-columns: 105px 90px 1fr; gap: 10px; }
+    .breach { display: block; } .block { color: #fca5a5; } .allow { color: #86efac; }
+    .bar { height: 8px; min-width: 2px; border-radius: 5px; background: #60a5fa; display: inline-block; }
+    code { color: #c4b5fd; }
     @media(max-width:600px) { article { grid-template-columns: 1fr 1fr; } article .reason { grid-column: 1/-1; } }
   </style>
 </head>
 <body>
   <h1>SentinelLoop</h1>
-  <div class="muted">Recent firewall inspections · refreshes every 2 seconds · events are held in memory</div>
-  <section class="cards" aria-label="Firewall metrics">
-    <div class="card"><div class="value" id="inspections">0</div><div class="label">Inspections shown</div></div>
-    <div class="card"><div class="value" id="blocked">0</div><div class="label">Blocked</div></div>
-    <div class="card"><div class="value" id="allowed">0</div><div class="label">Allowed</div></div>
+  <div class="muted">Live firewall activity and latest reproducible benchmark results.</div>
+  <section class="cards" aria-label="Live firewall metrics">
+    <div class="card"><div class="value" id="inspections">0</div><div class="label">Recent inspections</div></div>
+    <div class="card"><div class="value" id="blocked">0</div><div class="label">Blocked decisions</div></div>
+    <div class="card"><div class="value" id="allowed">0</div><div class="label">Allowed decisions</div></div>
     <div class="card"><div class="value" id="latency">0 ms</div><div class="label">p95 inspection latency</div></div>
   </section>
+
+  <h2>Attack success by family</h2>
+  <div class="muted">Latest baseline and firewall fuzz runs from artifacts/.</div>
+  <div id="family-asr" class="table-wrap"></div>
+
+  <h2>Holdout results by firewall version</h2>
+  <div id="versions" class="table-wrap"></div>
+
+  <h2>Attack success by generation</h2>
+  <div id="generations" class="table-wrap"></div>
+
+  <h2>MAP-Elites archive progress</h2>
+  <div id="map-progress" class="table-wrap"></div>
+  <h2>Family and defense-layer activity</h2>
+  <div id="heatmap" class="table-wrap"></div>
+
+  <h2>Top baseline breaches</h2>
+  <div id="breaches"></div>
+
   <h2>Live decision feed</h2>
   <div id="feed" aria-live="polite"></div>
   <script>
+    function table(target, headings, rows, format = row => row) {
+      const root = document.getElementById(target); root.replaceChildren();
+      if (!rows.length) { root.textContent = 'No benchmark data found. Run the fuzzer and closed-loop commands from the README.'; return; }
+      const node = document.createElement('table');
+      const head = document.createElement('tr');
+      for (const title of headings) { const cell = document.createElement('th'); cell.textContent = title; head.append(cell); }
+      const thead = document.createElement('thead'); thead.append(head); node.append(thead);
+      const body = document.createElement('tbody');
+      for (const row of rows) {
+        const tr = document.createElement('tr');
+        for (const value of format(row)) { const td = document.createElement('td'); td.textContent = value; tr.append(td); }
+        body.append(tr);
+      }
+      node.append(body); root.append(node);
+    }
+    function percent(value) { return (100 * Number(value || 0)).toFixed(1) + '%'; }
     async function refresh() {
       try {
-        const response = await fetch('/v1/events?limit=100', {cache: 'no-store'});
-        const data = await response.json();
-        for (const key of ['inspections', 'blocked', 'allowed']) document.getElementById(key).textContent = data.metrics[key];
-        document.getElementById('latency').textContent = Number(data.metrics.p95_latency_ms).toFixed(2) + ' ms';
-        const feed = document.getElementById('feed');
-        feed.replaceChildren();
-        for (const event of data.events) {
+        const [eventResponse, metricResponse] = await Promise.all([
+          fetch('/v1/events?limit=100', {cache: 'no-store'}),
+          fetch('/v1/metrics', {cache: 'no-store'})
+        ]);
+        const events = await eventResponse.json(); const metrics = await metricResponse.json();
+        for (const key of ['inspections', 'blocked', 'allowed']) document.getElementById(key).textContent = events.metrics[key];
+        document.getElementById('latency').textContent = Number(events.metrics.p95_latency_ms).toFixed(2) + ' ms';
+        table('family-asr', ['Attack family', 'Baseline ASR', 'Firewall ASR'], metrics.family_asr,
+          row => [row.family, percent(row.baseline_asr), percent(row.firewall_asr)]);
+        const versions = metrics.versions || [];
+        table('versions', ['Version', 'Holdout ASR', 'Holdout FPR', 'New rules'], versions,
+          row => [typeof row.version === 'number' ? 'v' + row.version : row.version, percent(row.asr), percent(row.fpr), row.new_rules]);
+        const geneticBase = metrics.genetic_history?.baseline || [];
+        const geneticFirewall = new Map((metrics.genetic_history?.firewall || []).map(row => [row.generation, row]));
+        const generationRows = geneticBase.map(row => ({generation: row.generation, baseline: row,
+          firewall: geneticFirewall.get(row.generation) || {}}));
+        table('generations', ['Generation', 'Baseline ASR', 'Firewall ASR', 'Best baseline fitness'], generationRows,
+          row => ['g' + row.generation, percent(row.baseline.breaches / Math.max(1, row.baseline.population)),
+            percent((row.firewall.breaches || 0) / Math.max(1, row.firewall.population || 1)), percent(row.baseline.best_fitness)]);
+        const mapBase = metrics.map_elites_history?.baseline || [];
+        const mapFirewall = new Map((metrics.map_elites_history?.firewall || []).map(row => [row.iteration, row]));
+        const mapRows = mapBase.map(row => ({base: row, firewall: mapFirewall.get(row.iteration) || {}}));
+        table('map-progress', ['Iteration', 'Baseline coverage', 'Baseline breach cells', 'Firewall coverage', 'Firewall breach cells'], mapRows,
+          row => [row.base.iteration, row.base.coverage, row.base.breach_cells,
+            row.firewall.coverage || 0, row.firewall.breach_cells || 0]);        table('heatmap', ['Family', 'Layer', 'Inspections', 'Blocked'], metrics.layer_heatmap || [],
+          row => [row.family, row.layer, row.attempts, row.blocked]);
+        document.querySelectorAll('#heatmap tbody tr').forEach((tr, index) => {
+          const row = metrics.layer_heatmap[index]; const rate = row.blocked / Math.max(1, row.attempts);
+          tr.style.backgroundColor = 'rgba(239, 68, 68, ' + (0.06 + rate * 0.28) + ')';
+        });        const breachRoot = document.getElementById('breaches'); breachRoot.replaceChildren();
+        for (const item of metrics.top_breaches || []) {
+          const card = document.createElement('article'); card.className = 'breach';
+          const title = document.createElement('strong'); title.textContent = item.family;
+          const prompt = document.createElement('div'); prompt.textContent = item.prompt;
+          const reason = document.createElement('div'); reason.className = 'muted'; reason.textContent = item.reason;
+          card.append(title, prompt, reason); breachRoot.append(card);
+        }
+        if (!breachRoot.childElementCount) breachRoot.textContent = 'No baseline breach records available.';
+        const feed = document.getElementById('feed'); feed.replaceChildren();
+        for (const event of events.events) {
           const row = document.createElement('article');
-          const verdict = document.createElement('strong');
-          verdict.textContent = event.verdict.toUpperCase();
-          verdict.className = event.verdict;
+          const verdict = document.createElement('strong'); verdict.textContent = event.verdict.toUpperCase(); verdict.className = event.verdict;
           const layer = document.createElement('span'); layer.textContent = event.layer;
           const reason = document.createElement('span'); reason.className = 'reason'; reason.textContent = event.reason;
           row.append(verdict, layer, reason); feed.append(row);
         }
-        if (!data.events.length) feed.textContent = 'No inspections yet. Send a request to the gateway to populate the feed.';
-      } catch (_) { document.getElementById('feed').textContent = 'Gateway event feed is unavailable.'; }
+        if (!events.events.length) feed.textContent = 'No inspections yet. Send a request to the gateway to populate the feed.';
+      } catch (_) { document.getElementById('feed').textContent = 'Gateway dashboard data is unavailable.'; }
     }
     refresh(); setInterval(refresh, 2000);
   </script>
