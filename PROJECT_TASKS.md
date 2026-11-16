@@ -44,18 +44,18 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ## Phase 2: Attack Corpus and Baseline Fuzzer (Week 2)
 
 ### Data
-- [ ] **P0** Collect/import seed attacks (deepset/prompt-injections, Tensor Trust, HackAPrompt, BIPIA)
-- [ ] **P0** Categorize attacks into families (override, role-play, leak, delimiter, encoding, indirect, multi-turn, multilingual)
+- [x] **P0** Create local seed corpus for the sandbox target (external datasets remain pending)
+- [x] **P0** Categorize initial seeds into override, role-play, leak, delimiter, indirect, and benign families (additional families pending)
 - [ ] **P0** Split into **train / validation / holdout** and lock the holdout set
 - [ ] **P1** Build a benign dataset (realistic user requests, documents, emails)
 
 ### Fuzzer v1
-- [ ] **P0** Implement mutation operators: paraphrase, translate, encode (base64/rot13), unicode obfuscation, document wrapping, distractor insertion
-- [ ] **P0** Implement an attack runner that sends attacks to the target and records results in PostgreSQL
+- [x] **P0** Implement paraphrase, base64/ROT13, Unicode, document wrapping, and distractor mutations (translation pending)
+- [x] **P0** Implement local attack runner with JSON/CSV records (PostgreSQL integration pending)
 - [ ] **P0** Implement a basic genetic algorithm (selection, mutation, crossover) with fitness = breach success
 - [ ] **P1** Add LLM-driven mutation (attacker LLM rewrites payloads using failure feedback)
 - [ ] **P1** Add multi-turn attack support (conversation state)
-- [ ] **P0** Run the **baseline: no firewall** and record ASR per family
+- [x] **P0** Run reproducible no-firewall baseline and report ASR per family
 
 **Done when:** one command runs N attacks against the unprotected app and produces a per-family ASR table.
 
