@@ -22,7 +22,7 @@ class EventStore:
             self.backend = "postgres"
             try:
                 import psycopg
-            from psycopg.rows import dict_row
+                from psycopg.rows import dict_row
             except ImportError as error:
                 raise RuntimeError("PostgreSQL storage needs the optional .[storage] dependency") from error
             self._psycopg = psycopg
