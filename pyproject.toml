@@ -16,5 +16,9 @@ include = ["target_app*", "fuzzer*", "firewall*"]
 line-length = 100
 target-version = "py311"
 
+[tool.setuptools.package-data]
+"firewall.gateway" = ["dashboard.html"]
+
+
 
 

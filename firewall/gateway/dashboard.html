@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelLoop Firewall</title>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #111827; color: #e5e7eb; }
+    body { max-width: 1050px; margin: 36px auto; padding: 0 20px; }
+    h1 { margin-bottom: 4px; } .muted { color: #9ca3af; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 12px; margin: 24px 0; }
+    .card, article { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 16px; }
+    .value { font-size: 1.8rem; font-weight: 700; } .label { color: #9ca3af; }
+    #feed { display: grid; gap: 8px; } article { display: grid; grid-template-columns: 100px 100px 1fr; gap: 12px; }
+    .block { color: #fca5a5; } .allow { color: #86efac; }
+    @media(max-width:600px) { article { grid-template-columns: 1fr 1fr; } article .reason { grid-column: 1/-1; } }
+  </style>
+</head>
+<body>
+  <h1>SentinelLoop</h1>
+  <div class="muted">Recent firewall inspections · refreshes every 2 seconds · events are held in memory</div>
+  <section class="cards" aria-label="Firewall metrics">
+    <div class="card"><div class="value" id="inspections">0</div><div class="label">Inspections shown</div></div>
+    <div class="card"><div class="value" id="blocked">0</div><div class="label">Blocked</div></div>
+    <div class="card"><div class="value" id="allowed">0</div><div class="label">Allowed</div></div>
+    <div class="card"><div class="value" id="latency">0 ms</div><div class="label">p95 inspection latency</div></div>
+  </section>
+  <h2>Live decision feed</h2>
+  <div id="feed" aria-live="polite"></div>
+  <script>
+    async function refresh() {
+      try {
+        const response = await fetch('/v1/events?limit=100', {cache: 'no-store'});
+        const data = await response.json();
+        for (const key of ['inspections', 'blocked', 'allowed']) document.getElementById(key).textContent = data.metrics[key];
+        document.getElementById('latency').textContent = Number(data.metrics.p95_latency_ms).toFixed(2) + ' ms';
+        const feed = document.getElementById('feed');
+        feed.replaceChildren();
+        for (const event of data.events) {
+          const row = document.createElement('article');
+          const verdict = document.createElement('strong');
+          verdict.textContent = event.verdict.toUpperCase();
+          verdict.className = event.verdict;
+          const layer = document.createElement('span'); layer.textContent = event.layer;
+          const reason = document.createElement('span'); reason.className = 'reason'; reason.textContent = event.reason;
+          row.append(verdict, layer, reason); feed.append(row);
+        }
+        if (!data.events.length) feed.textContent = 'No inspections yet. Send a request to the gateway to populate the feed.';
+      } catch (_) { document.getElementById('feed').textContent = 'Gateway event feed is unavailable.'; }
+    }
+    refresh(); setInterval(refresh, 2000);
+  </script>
+</body>
+</html>

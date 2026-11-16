@@ -11,7 +11,7 @@ python -m pip install -e .
 python -m uvicorn firewall.gateway.app:app --host 127.0.0.1 --port 8000
 ```
 
-The default backend is the local fake email assistant. Open `http://127.0.0.1:8000/docs` for interactive API docs. The gateway exposes `/health`, `/v1/models`, and an OpenAI-compatible `POST /v1/chat/completions` endpoint.
+The default backend is the local fake email assistant. Open `http://127.0.0.1:8000/docs` for interactive API docs. The gateway exposes `/health`, `/v1/models`, `/v1/events`, an OpenAI-compatible `POST /v1/chat/completions` endpoint, and a live dashboard at `http://127.0.0.1:8000/dashboard`.
 
 Example request from another PowerShell window:
 
@@ -23,7 +23,7 @@ $body = @{
 Invoke-RestMethod http://127.0.0.1:8000/v1/chat/completions -Method Post -ContentType "application/json" -Body $body
 ```
 
-The gateway checks user prompts and retrieved email content, blocks matching inputs, redacts the fake secret/canary in outputs, and logs each inspection as JSON. Streaming is not implemented. Upstream-generated tool calls are blocked because no tool authorization policy is configured.
+The gateway checks user prompts and retrieved email content, blocks matching inputs, redacts the fake secret/canary in outputs, and logs each inspection as JSON. The dashboard shows the last 500 in-memory inspection decisions, block/allow counts, p95 inspection latency, and a live feed; restarting the service clears it. Streaming is not implemented. Upstream-generated tool calls are blocked because no tool authorization policy is configured.
 
 To proxy to an OpenAI-compatible backend, set `SENTINELLOOP_UPSTREAM_URL` to its API base URL (for example one ending in `/v1`), `SENTINELLOOP_MODEL` to its model name, and `SENTINELLOOP_API_KEY` if required. See `.env.example`; the gateway reads these from the process environment and never loads `.env` automatically. This path has not been verified against a live provider.
 

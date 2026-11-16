@@ -1,6 +1,5 @@
 """OpenAI-compatible gateway with firewall inspection and a sandbox default backend."""
 
-import asyncio
 import json
 import logging
 import os
@@ -8,9 +7,12 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from collections import deque
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from firewall import Firewall, Inspection
@@ -33,6 +35,7 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
+events: deque[dict[str, Any]] = deque(maxlen=500)
 app = FastAPI(title="SentinelLoop Firewall Gateway", version="0.1.0")
 
 
@@ -45,9 +48,11 @@ class ChatRequest(BaseModel):
 
 
 def _log_inspection(request_id: str, result: Inspection) -> None:
-    logger.info("firewall_decision", extra={"request_id": request_id, "layer": result.layer,
-                "verdict": result.verdict, "score": result.score, "latency_ms": result.latency_ms,
-                "reason": result.reason})
+    event = {"request_id": request_id, "layer": result.layer, "verdict": result.verdict,
+             "score": result.score, "latency_ms": result.latency_ms, "reason": result.reason,
+             "timestamp": time.time()}
+    events.appendleft(event)
+    logger.info("firewall_decision", extra={key: value for key, value in event.items() if key != "timestamp"})
 
 
 def _text_content(content: Any) -> str:
@@ -91,6 +96,25 @@ def health() -> dict[str, str]:
 def models() -> dict[str, Any]:
     model = os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox")
     return {"object": "list", "data": [{"id": model, "object": "model", "owned_by": "sentinelloop"}]}
+
+
+@app.get("/v1/events")
+def recent_events(limit: int = 100) -> dict[str, Any]:
+    selected = list(events)[:max(1, min(limit, 500))]
+    latencies = sorted(float(event["latency_ms"]) for event in selected)
+    p95_index = max(0, int(0.95 * len(latencies) + 0.999) - 1)
+    return {"events": selected, "metrics": {
+        "inspections": len(selected),
+        "blocked": sum(event["verdict"] == "block" for event in selected),
+        "allowed": sum(event["verdict"] == "allow" for event in selected),
+        "p95_latency_ms": latencies[p95_index] if latencies else 0.0,
+    }}
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard() -> str:
+    page = Path(__file__).with_name("dashboard.html")
+    return page.read_text(encoding="utf-8")
 
 
 @app.post("/v1/chat/completions")
