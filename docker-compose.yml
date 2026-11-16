@@ -72,6 +72,8 @@ services:
       - /tmp:size=16m
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      disable: true
     command: ["python", "-m", "fuzzer.runner", "--mutate", "--firewall"]
 
   worker:
@@ -92,6 +94,8 @@ services:
       - /tmp:size=16m
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      disable: true
     command: ["rq", "worker", "--url", "redis://redis:6379/0", "fuzzer"]
 
 volumes:
