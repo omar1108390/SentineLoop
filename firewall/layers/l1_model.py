@@ -21,9 +21,14 @@ def _features(text: str, use_bigrams: bool) -> set[str]:
 
 class InjectionModel:
     def __init__(self, model_path: Path | None = None) -> None:
-        path = model_path or Path(__file__).resolve().parents[1] / "models" / "injection_classifier.json"
+        path = (
+            model_path
+            or Path(__file__).resolve().parents[1] / "models" / "injection_classifier.json"
+        )
         self.model = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
-        self.weights = dict(zip(self.model["features"], self.model["weights"])) if self.model else {}
+        self.weights = (
+            dict(zip(self.model["features"], self.model["weights"])) if self.model else {}
+        )
 
     @property
     def available(self) -> bool:

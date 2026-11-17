@@ -15,8 +15,9 @@ def run_fuzzer_job(include_mutations: bool = True, use_firewall: bool = True) ->
     artifacts = Path(os.getenv("SENTINELLOOP_ARTIFACTS_DIR", "artifacts")) / "jobs"
     artifacts.mkdir(parents=True, exist_ok=True)
     prefix = artifacts / job_id
-    artifact_records = [{key: value for key, value in record.items() if key != "run_id"}
-                        for record in records]
+    artifact_records = [
+        {key: value for key, value in record.items() if key != "run_id"} for record in records
+    ]
     prefix.with_suffix(".json").write_text(
         json.dumps({"summary": summary, "attempts": artifact_records}, indent=2), encoding="utf-8"
     )

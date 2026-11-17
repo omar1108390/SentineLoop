@@ -73,9 +73,12 @@ def evaluate_split(split: str) -> dict:
             if name not in policy.approval_required:
                 continue
             benign_side_effects += 1
-            benign_denied += policy.authorize(
-                name, args, provenance="trusted_user", approval_granted=True
-            ).verdict == "block"
+            benign_denied += (
+                policy.authorize(
+                    name, args, provenance="trusted_user", approval_granted=True
+                ).verdict
+                == "block"
+            )
 
     return {
         "output_redaction": {
@@ -88,10 +91,14 @@ def evaluate_split(split: str) -> dict:
         "tool_policy": {
             "attack_side_effect_calls": attack_side_effects,
             "attack_side_effects_denied": attack_denied,
-            "attack_denial_rate": attack_denied / attack_side_effects if attack_side_effects else 0.0,
+            "attack_denial_rate": (
+                attack_denied / attack_side_effects if attack_side_effects else 0.0
+            ),
             "benign_side_effect_calls": benign_side_effects,
             "benign_side_effects_denied": benign_denied,
-            "benign_denial_rate": benign_denied / benign_side_effects if benign_side_effects else 0.0,
+            "benign_denial_rate": (
+                benign_denied / benign_side_effects if benign_side_effects else 0.0
+            ),
             "scope": "replays observed fake-tool calls through policy; no side-effecting tool is executed",
         },
     }

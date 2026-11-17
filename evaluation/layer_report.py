@@ -22,10 +22,17 @@ def percentile(values: list[float], fraction: float) -> float:
     return ordered[max(0, math.ceil(fraction * len(ordered)) - 1)]
 
 
-def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshold: float,
-              enabled_layers: set[str] | None = None) -> tuple[dict, float]:
+def score_row(
+    row: dict,
+    index: SimilarityIndex,
+    model: InjectionModel,
+    threshold: float,
+    enabled_layers: set[str] | None = None,
+) -> tuple[dict, float]:
     prompts = row.get("turns") or [row["prompt"]]
-    enabled = enabled_layers if enabled_layers is not None else {"rules", "classifier", "similarity"}
+    enabled = (
+        enabled_layers if enabled_layers is not None else {"rules", "classifier", "similarity"}
+    )
     start = perf_counter()
     rule_hit = similarity_hit = False
     model_score, similarity, nearest = 0.0, 0.0, ""
@@ -42,25 +49,45 @@ def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshol
                 similarity, nearest = score, example
     elapsed = (perf_counter() - start) * 1000
     similarity_hit = similarity >= threshold
-    return {"rules": rule_hit, "classifier": model_score >= model.threshold,
-            "similarity": similarity_hit,
-            "combined": rule_hit or model_score >= model.threshold or similarity_hit,
-            "classifier_score": model_score, "similarity_score": similarity,
-            "nearest_training_id": nearest}, elapsed
+    return {
+        "rules": rule_hit,
+        "classifier": model_score >= model.threshold,
+        "similarity": similarity_hit,
+        "combined": rule_hit or model_score >= model.threshold or similarity_hit,
+        "classifier_score": model_score,
+        "similarity_score": similarity,
+        "nearest_training_id": nearest,
+    }, elapsed
 
 
-def evaluate_split(name: str, index: SimilarityIndex, model: InjectionModel,
-                   similarity_threshold: float, enabled_layers: set[str] | None = None) -> dict:
+def evaluate_split(
+    name: str,
+    index: SimilarityIndex,
+    model: InjectionModel,
+    similarity_threshold: float,
+    enabled_layers: set[str] | None = None,
+) -> dict:
     attacks = json.loads((ROOT / name / "attacks.json").read_text(encoding="utf-8"))
     benign = json.loads((ROOT / name / "benign.json").read_text(encoding="utf-8"))
-    results = {layer: {"tp": 0, "fp": 0} for layer in ("rules", "classifier", "similarity", "combined")}
+    results = {
+        layer: {"tp": 0, "fp": 0} for layer in ("rules", "classifier", "similarity", "combined")
+    }
     timings, nearest_examples = [], []
     for label, rows in ((1, attacks), (0, benign)):
         for row in rows:
-            predictions, elapsed = score_row(row, index, model, similarity_threshold, enabled_layers)
+            predictions, elapsed = score_row(
+                row, index, model, similarity_threshold, enabled_layers
+            )
             timings.append(elapsed)
-            nearest_examples.append({"id": row["id"], **{key: predictions[key] for key in
-                                      ("classifier_score", "similarity_score", "nearest_training_id")}})
+            nearest_examples.append(
+                {
+                    "id": row["id"],
+                    **{
+                        key: predictions[key]
+                        for key in ("classifier_score", "similarity_score", "nearest_training_id")
+                    },
+                }
+            )
             for layer in results:
                 if label and predictions[layer]:
                     results[layer]["tp"] += 1
@@ -86,18 +113,24 @@ def main() -> None:
     train = json.loads((ROOT / "train" / "attacks.json").read_text(encoding="utf-8"))
     model = InjectionModel()
     index = SimilarityIndex(train)
-    result = {"index_source": "evaluation/train/attacks.json", "classifier_source": "evaluation/train only",
-              "classifier_threshold": model.threshold, "similarity_threshold": args.threshold,
-              "validation": evaluate_split("validation", index, model, args.threshold),
-              "holdout": evaluate_split("holdout", index, model, args.threshold)}
+    result = {
+        "index_source": "evaluation/train/attacks.json",
+        "classifier_source": "evaluation/train only",
+        "classifier_threshold": model.threshold,
+        "similarity_threshold": args.threshold,
+        "validation": evaluate_split("validation", index, model, args.threshold),
+        "holdout": evaluate_split("holdout", index, model, args.threshold),
+    }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
     for split in ("validation", "holdout"):
         metrics = result[split]
-        print(f"{split}: L1 classifier {metrics['classifier']['detection_rate']:.1%}/{metrics['classifier']['false_positive_rate']:.1%}; "
-              f"L2 similarity {metrics['similarity']['detection_rate']:.1%}/{metrics['similarity']['false_positive_rate']:.1%}; "
-              f"combined {metrics['combined']['detection_rate']:.1%}/{metrics['combined']['false_positive_rate']:.1%}; "
-              f"p95 {metrics['latency_ms']['p95']:.4f} ms")
+        print(
+            f"{split}: L1 classifier {metrics['classifier']['detection_rate']:.1%}/{metrics['classifier']['false_positive_rate']:.1%}; "
+            f"L2 similarity {metrics['similarity']['detection_rate']:.1%}/{metrics['similarity']['false_positive_rate']:.1%}; "
+            f"combined {metrics['combined']['detection_rate']:.1%}/{metrics['combined']['false_positive_rate']:.1%}; "
+            f"p95 {metrics['latency_ms']['p95']:.4f} ms"
+        )
     print(f"Wrote {args.output}")
 
 

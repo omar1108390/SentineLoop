@@ -37,8 +37,8 @@ def build(seed: str = "sentinelloop-v1") -> dict:
         else:
             train_count, validation_count, holdout_count = n, 0, 0
         splits["train"]["attacks"].extend(rows[:train_count])
-        splits["validation"]["attacks"].extend(rows[train_count:train_count + validation_count])
-        splits["holdout"]["attacks"].extend(rows[train_count + validation_count:])
+        splits["validation"]["attacks"].extend(rows[train_count : train_count + validation_count])
+        splits["holdout"]["attacks"].extend(rows[train_count + validation_count :])
     benign.sort(key=lambda row: _order(row, seed))
     train_end = int(len(benign) * 0.8)
     validation_end = train_end + max(1, int(len(benign) * 0.1))
@@ -50,25 +50,36 @@ def build(seed: str = "sentinelloop-v1") -> dict:
         directory = ROOT / split_name
         directory.mkdir(parents=True, exist_ok=True)
         for kind, rows in values.items():
-            (directory / f"{kind}.json").write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
+            (directory / f"{kind}.json").write_text(
+                json.dumps(rows, indent=2) + "\n", encoding="utf-8"
+            )
     lock_paths = [ROOT / "holdout" / "attacks.json", ROOT / "holdout" / "benign.json"]
-    manifest = {"seed": seed,
-                "counts": {name: {kind: len(rows) for kind, rows in values.items()} for name, values in splits.items()},
-                "locked_holdout_sha256": {path.name: _sha(path) for path in lock_paths}}
+    manifest = {
+        "seed": seed,
+        "counts": {
+            name: {kind: len(rows) for kind, rows in values.items()}
+            for name, values in splits.items()
+        },
+        "locked_holdout_sha256": {path.name: _sha(path) for path in lock_paths},
+    }
     (ROOT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest
 
 
 def verify() -> bool:
     manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
-    return all(_sha(ROOT / "holdout" / name) == digest
-               for name, digest in manifest["locked_holdout_sha256"].items())
+    return all(
+        _sha(ROOT / "holdout" / name) == digest
+        for name, digest in manifest["locked_holdout_sha256"].items()
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", default="sentinelloop-v1")
-    parser.add_argument("--verify", action="store_true", help="Verify that locked holdout files match the manifest")
+    parser.add_argument(
+        "--verify", action="store_true", help="Verify that locked holdout files match the manifest"
+    )
     args = parser.parse_args()
     if args.verify:
         valid = verify()

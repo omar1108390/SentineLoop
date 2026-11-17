@@ -63,8 +63,10 @@ def main() -> None:
     for split, rows in result["splits"].items():
         print(f"{split}:")
         for name, values in rows.items():
-            print(f"  {name:<20} ASR={values['asr']:.1%} FPR={values['false_positive_rate']:.1%} "
-                  f"p95={values['p95_latency_ms']:.4f} ms")
+            print(
+                f"  {name:<20} ASR={values['asr']:.1%} FPR={values['false_positive_rate']:.1%} "
+                f"p95={values['p95_latency_ms']:.4f} ms"
+            )
     print(f"Wrote {args.output}")
 
 

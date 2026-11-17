@@ -65,6 +65,8 @@ python -m hardening.training.train_classifier
 python -m evaluation.layer_report
 python -m evaluation.ablation  # disable each input detector in turn on validation/locked holdout
 python -m evaluation.guard_ablation  # measure output redaction and tool-policy defenses
+python -m evaluation.compare_baselines  # compare no defense, keyword, and layered firewall
+python -m evaluation.generate_report  # regenerate REPORT.md and figures
 python -m evaluation.benchmark_stats  # clustered uncertainty and paired comparison for benchmark artifacts
 python -m evaluation.utility_report  # full benign-task success with and without the firewall
 python -m evaluation.split_corpus --verify
@@ -88,3 +90,8 @@ The current local corpus has 24 attack seeds (including four two-turn attacks) a
 - `artifacts/`: sample benchmark output.
 
 See `PROJECT_DESCRIPTION.md` and `PROJECT_TASKS.md` for the full architecture and roadmap.
+
+
+## Evaluation report
+
+See [REPORT.md](REPORT.md) for results and limitations and [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for complete commands and environment details.

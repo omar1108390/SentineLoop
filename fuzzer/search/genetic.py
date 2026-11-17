@@ -43,8 +43,9 @@ def crossover(first: Attack, second: Attack, rng: random.Random) -> Attack:
     return Attack(child, first.family, "crossover", first.prompt + " || " + second.prompt)
 
 
-def search(generations: int = 5, population_size: int = 20, seed: int = 42,
-           use_firewall: bool = False) -> dict:
+def search(
+    generations: int = 5, population_size: int = 20, seed: int = 42, use_firewall: bool = False
+) -> dict:
     if generations < 1 or population_size < 2:
         raise ValueError("generations must be positive and population_size at least 2")
     rng = random.Random(seed)
@@ -63,10 +64,16 @@ def search(generations: int = 5, population_size: int = 20, seed: int = 42,
     for generation in range(generations):
         ranked = sorted(population, key=lambda item: score(item)[0], reverse=True)
         fitnesses = [score(item)[0] for item in ranked]
-        history.append({"generation": generation, "population": len(population),
-                        "breaches": int(sum(fitnesses)), "best_fitness": max(fitnesses, default=0.0),
-                        "family_breaches": sum(fitnesses)})
-        elites = ranked[:max(2, population_size // 4)]
+        history.append(
+            {
+                "generation": generation,
+                "population": len(population),
+                "breaches": int(sum(fitnesses)),
+                "best_fitness": max(fitnesses, default=0.0),
+                "family_breaches": sum(fitnesses),
+            }
+        )
+        elites = ranked[: max(2, population_size // 4)]
         next_population = list(elites)
         while len(next_population) < population_size:
             first = rng.choice(elites)
@@ -80,10 +87,19 @@ def search(generations: int = 5, population_size: int = 20, seed: int = 42,
     unique = {}
     for attack in population:
         fitness, label = score(attack)
-        unique[attack.prompt] = {"prompt": attack.prompt, "family": attack.family,
-                                 "technique": attack.technique, "fitness": fitness, "outcome": label}
-    return {"seed": seed, "firewall": use_firewall, "history": history,
-            "archive": sorted(unique.values(), key=lambda row: row["fitness"], reverse=True)}
+        unique[attack.prompt] = {
+            "prompt": attack.prompt,
+            "family": attack.family,
+            "technique": attack.technique,
+            "fitness": fitness,
+            "outcome": label,
+        }
+    return {
+        "seed": seed,
+        "firewall": use_firewall,
+        "history": history,
+        "archive": sorted(unique.values(), key=lambda row: row["fitness"], reverse=True),
+    }
 
 
 def main() -> None:
@@ -95,11 +111,15 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
     result = search(args.generations, args.population, args.seed, args.firewall)
-    output = args.output or Path("artifacts/genetic-firewall.json" if args.firewall else "artifacts/genetic-baseline.json")
+    output = args.output or Path(
+        "artifacts/genetic-firewall.json" if args.firewall else "artifacts/genetic-baseline.json"
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2), encoding="utf-8")
-    print(f"Generations: {len(result['history'])}; archive: {len(result['archive'])}; "
-          f"best fitness: {max((row['fitness'] for row in result['archive']), default=0):.1f}")
+    print(
+        f"Generations: {len(result['history'])}; archive: {len(result['archive'])}; "
+        f"best fitness: {max((row['fitness'] for row in result['archive']), default=0):.1f}"
+    )
     print(f"Wrote {output}")
 
 

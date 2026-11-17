@@ -24,8 +24,13 @@ class ToolPolicy:
         self.domains = set(self.config["email_domain_allowlist"])
         self.max_length = int(self.config["max_string_length"])
 
-    def authorize(self, tool_name: str, arguments: dict[str, Any] | str,
-                  provenance: str = "untrusted", approval_granted: bool = False) -> PolicyDecision:
+    def authorize(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | str,
+        provenance: str = "untrusted",
+        approval_granted: bool = False,
+    ) -> PolicyDecision:
         if isinstance(arguments, str):
             try:
                 arguments = json.loads(arguments)
@@ -36,23 +41,41 @@ class ToolPolicy:
         allowed_names = self.read_only | self.approval_required
         if tool_name not in allowed_names:
             return PolicyDecision("block", "tool is not in the sandbox allowlist", tool_name)
-        if any(not isinstance(value, str) or len(value) > self.max_length for value in arguments.values()):
+        if any(
+            not isinstance(value, str) or len(value) > self.max_length
+            for value in arguments.values()
+        ):
             return PolicyDecision("block", "tool arguments must be short strings", tool_name)
         required = {
-            "read_email": {"email_id"}, "search_files": {"query"}, "calendar_view": set(),
-            "calendar_add": {"title", "time"}, "send_email": {"to", "subject", "body"},
+            "read_email": {"email_id"},
+            "search_files": {"query"},
+            "calendar_view": set(),
+            "calendar_add": {"title", "time"},
+            "send_email": {"to", "subject", "body"},
         }[tool_name]
         if set(arguments) != required:
-            return PolicyDecision("block", f"expected exactly these arguments: {', '.join(sorted(required))}", tool_name)
+            return PolicyDecision(
+                "block",
+                f"expected exactly these arguments: {', '.join(sorted(required))}",
+                tool_name,
+            )
         if tool_name == "read_email" and not arguments["email_id"].startswith("email-"):
-            return PolicyDecision("block", "email_id is outside the fake sandbox namespace", tool_name)
+            return PolicyDecision(
+                "block", "email_id is outside the fake sandbox namespace", tool_name
+            )
         if tool_name == "send_email":
             recipient = arguments["to"].rsplit("@", 1)
             if len(recipient) != 2 or recipient[1].lower() not in self.domains:
-                return PolicyDecision("block", "recipient is outside the fake email domain allowlist", tool_name)
+                return PolicyDecision(
+                    "block", "recipient is outside the fake email domain allowlist", tool_name
+                )
         if tool_name in self.approval_required:
             if provenance != "trusted_user":
-                return PolicyDecision("block", "side-effect tool was requested from untrusted provenance", tool_name)
+                return PolicyDecision(
+                    "block", "side-effect tool was requested from untrusted provenance", tool_name
+                )
             if not approval_granted:
-                return PolicyDecision("block", "explicit trusted user approval is required", tool_name)
+                return PolicyDecision(
+                    "block", "explicit trusted user approval is required", tool_name
+                )
         return PolicyDecision("allow", "tool name and arguments satisfy sandbox policy", tool_name)

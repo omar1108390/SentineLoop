@@ -13,7 +13,9 @@ def test_output_guard_redacts_canary_and_secret():
 
 def test_output_guard_allows_ordinary_text():
     assert guard_output("Your meeting is at three.") == (
-        "Your meeting is at three.", False, "no canary or sandbox secret detected"
+        "Your meeting is at three.",
+        False,
+        "no canary or sandbox secret detected",
     )
 
 

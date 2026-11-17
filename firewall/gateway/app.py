@@ -59,15 +59,24 @@ class ChatRequest(BaseModel):
 
 
 def _log_inspection(request_id: str, result: Inspection) -> None:
-    event = {"request_id": request_id, "layer": result.layer, "verdict": result.verdict,
-             "score": result.score, "latency_ms": result.latency_ms, "reason": result.reason,
-             "timestamp": time.time()}
+    event = {
+        "request_id": request_id,
+        "layer": result.layer,
+        "verdict": result.verdict,
+        "score": result.score,
+        "latency_ms": result.latency_ms,
+        "reason": result.reason,
+        "timestamp": time.time(),
+    }
     events.appendleft(event)
     try:
         event_store.append_event(event)
     except Exception:
         logger.exception("event_store_write_failed")
-    logger.info("firewall_decision", extra={key: value for key, value in event.items() if key != "timestamp"})
+    logger.info(
+        "firewall_decision",
+        extra={key: value for key, value in event.items() if key != "timestamp"},
+    )
 
 
 def _text_content(content: Any) -> str:
@@ -79,11 +88,20 @@ def _text_content(content: Any) -> str:
 
 
 def _completion(model: str, text: str, finish_reason: str = "stop") -> dict[str, Any]:
-    return {"id": "chatcmpl-" + uuid.uuid4().hex, "object": "chat.completion",
-            "created": int(time.time()), "model": model,
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": text},
-                         "finish_reason": finish_reason}],
-            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+    return {
+        "id": "chatcmpl-" + uuid.uuid4().hex,
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": text},
+                "finish_reason": finish_reason,
+            }
+        ],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
 
 
 def _stream_completion(result: dict[str, Any]) -> StreamingResponse:
@@ -91,27 +109,39 @@ def _stream_completion(result: dict[str, Any]) -> StreamingResponse:
     message = choice.get("message", {})
     content = message.get("content") or ""
     finish_reason = choice.get("finish_reason", "stop")
-    base = {"id": result.get("id", "chatcmpl-" + uuid.uuid4().hex),
-            "object": "chat.completion.chunk", "created": result.get("created", int(time.time())),
-            "model": result.get("model", "sentinelloop-sandbox")}
+    base = {
+        "id": result.get("id", "chatcmpl-" + uuid.uuid4().hex),
+        "object": "chat.completion.chunk",
+        "created": result.get("created", int(time.time())),
+        "model": result.get("model", "sentinelloop-sandbox"),
+    }
 
     def events():
-        first = {**base, "choices": [{"index": 0, "delta": {"role": "assistant"},
-                                      "finish_reason": None}]}
+        first = {
+            **base,
+            "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}],
+        }
         yield "data: " + json.dumps(first, ensure_ascii=False) + "\n\n"
         if content:
-            token = {**base, "choices": [{"index": 0, "delta": {"content": content},
-                                           "finish_reason": None}]}
+            token = {
+                **base,
+                "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": None}],
+            }
             yield "data: " + json.dumps(token, ensure_ascii=False) + "\n\n"
         final = {**base, "choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}]}
         yield "data: " + json.dumps(final, ensure_ascii=False) + "\n\n"
         yield "data: [DONE]\n\n"
 
-    return StreamingResponse(events(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
-def _upstream_request(payload: dict[str, Any], base_url: str, api_key: str | None) -> dict[str, Any]:
+def _upstream_request(
+    payload: dict[str, Any], base_url: str, api_key: str | None
+) -> dict[str, Any]:
     url = base_url.rstrip("/") + "/chat/completions"
     # Groq's Cloudflare edge rejects urllib's default Python-urllib signature
     # with a bare 403 / error 1010. Send a stable, application-specific UA.
@@ -121,13 +151,17 @@ def _upstream_request(payload: dict[str, Any], base_url: str, api_key: str | Non
     }
     if api_key:
         headers["Authorization"] = "Bearer " + api_key
-    request = urllib.request.Request(url, json.dumps(payload).encode("utf-8"), headers, method="POST")
+    request = urllib.request.Request(
+        url, json.dumps(payload).encode("utf-8"), headers, method="POST"
+    )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:1000]
-        raise HTTPException(status_code=502, detail=f"Upstream returned {error.code}: {detail}") from error
+        raise HTTPException(
+            status_code=502, detail=f"Upstream returned {error.code}: {detail}"
+        ) from error
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
         raise HTTPException(status_code=502, detail=f"Upstream request failed: {error}") from error
 
@@ -137,7 +171,9 @@ def _job_queue():
         from redis import Redis
         from rq import Queue
     except ImportError as error:
-        raise HTTPException(status_code=503, detail="Install the jobs extra to enable queued fuzzer runs") from error
+        raise HTTPException(
+            status_code=503, detail="Install the jobs extra to enable queued fuzzer runs"
+        ) from error
     redis_url = os.getenv("SENTINELLOOP_REDIS_URL", "redis://localhost:6379/0")
     try:
         connection = Redis.from_url(redis_url, socket_connect_timeout=2)
@@ -168,21 +204,34 @@ def fuzzer_run_status(job_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail="Could not read job status") from error
     if job is None:
         raise HTTPException(status_code=404, detail="Fuzzer job not found")
-    return {"job_id": job.id, "status": job.get_status(refresh=True),
-            "result": job.result if job.is_finished else None,
-            "error": "Fuzzer job failed; see worker logs" if job.is_failed else None}
+    return {
+        "job_id": job.id,
+        "status": job.get_status(refresh=True),
+        "result": job.result if job.is_finished else None,
+        "error": "Fuzzer job failed; see worker logs" if job.is_failed else None,
+    }
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "backend": "upstream" if os.getenv("SENTINELLOOP_UPSTREAM_URL") else "sandbox"}
+    return {
+        "status": "ok",
+        "backend": "upstream" if os.getenv("SENTINELLOOP_UPSTREAM_URL") else "sandbox",
+    }
 
 
 @app.get("/v1/models")
 def models() -> dict[str, Any]:
     upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
-    model = os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox") if upstream else "sentinelloop-sandbox"
-    return {"object": "list", "data": [{"id": model, "object": "model", "owned_by": "sentinelloop"}]}
+    model = (
+        os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox")
+        if upstream
+        else "sentinelloop-sandbox"
+    )
+    return {
+        "object": "list",
+        "data": [{"id": model, "object": "model", "owned_by": "sentinelloop"}],
+    }
 
 
 @app.get("/v1/events")
@@ -191,15 +240,18 @@ def recent_events(limit: int = 100) -> dict[str, Any]:
         selected = event_store.recent_events(limit)
     except Exception:
         logger.exception("event_store_read_failed")
-        selected = list(events)[:max(1, min(limit, 500))]
+        selected = list(events)[: max(1, min(limit, 500))]
     latencies = sorted(float(event["latency_ms"]) for event in selected)
     p95_index = max(0, int(0.95 * len(latencies) + 0.999) - 1)
-    return {"events": selected, "metrics": {
-        "inspections": len(selected),
-        "blocked": sum(event["verdict"] == "block" for event in selected),
-        "allowed": sum(event["verdict"] == "allow" for event in selected),
-        "p95_latency_ms": latencies[p95_index] if latencies else 0.0,
-    }}
+    return {
+        "events": selected,
+        "metrics": {
+            "inspections": len(selected),
+            "blocked": sum(event["verdict"] == "block" for event in selected),
+            "allowed": sum(event["verdict"] == "allow" for event in selected),
+            "p95_latency_ms": latencies[p95_index] if latencies else 0.0,
+        },
+    }
 
 
 @app.get("/v1/metrics")
@@ -226,9 +278,13 @@ def benchmark_metrics() -> dict[str, Any]:
     family_rows = []
     families = set(baseline.get("summary", {})) | set(protected.get("summary", {}))
     for family in sorted(families):
-        family_rows.append({"family": family,
-                            "baseline_asr": baseline.get("summary", {}).get(family, {}).get("asr", 0.0),
-                            "firewall_asr": protected.get("summary", {}).get(family, {}).get("asr", 0.0)})
+        family_rows.append(
+            {
+                "family": family,
+                "baseline_asr": baseline.get("summary", {}).get(family, {}).get("asr", 0.0),
+                "firewall_asr": protected.get("summary", {}).get(family, {}).get("asr", 0.0),
+            }
+        )
 
     layer_counts: dict[tuple[str, str], dict[str, int]] = {}
     for attempt in protected.get("attempts", []):
@@ -241,40 +297,74 @@ def benchmark_metrics() -> dict[str, Any]:
             key = (attempt.get("family", "unknown"), layer)
             cell = layer_counts.setdefault(key, {"attempts": 0, "blocked": 0})
             cell["attempts"] += 1
-            verdict = check.get("verdict", attempt.get("input_verdict")) if isinstance(check, dict) else attempt.get("input_verdict")
+            verdict = (
+                check.get("verdict", attempt.get("input_verdict"))
+                if isinstance(check, dict)
+                else attempt.get("input_verdict")
+            )
             cell["blocked"] += int(verdict == "block")
-    heatmap = [{"family": family, "layer": layer, **counts}
-               for (family, layer), counts in sorted(layer_counts.items())]
+    heatmap = [
+        {"family": family, "layer": layer, **counts}
+        for (family, layer), counts in sorted(layer_counts.items())
+    ]
 
-    breaches = [attempt for attempt in baseline.get("attempts", []) if attempt.get("outcome") == "breach"]
-    top_breaches = [{"family": row.get("family", "unknown"), "prompt": row.get("prompt", ""),
-                     "reason": row.get("reason", "")}
-                    for row in breaches[:5]]
+    breaches = [
+        attempt for attempt in baseline.get("attempts", []) if attempt.get("outcome") == "breach"
+    ]
+    top_breaches = [
+        {
+            "family": row.get("family", "unknown"),
+            "prompt": row.get("prompt", ""),
+            "reason": row.get("reason", ""),
+        }
+        for row in breaches[:5]
+    ]
     baseline_holdout = hardening.get("baseline_holdout_overall", {})
-    versions = ([{"version": "baseline", "asr": baseline_holdout.get("asr", 0.0),
-                 "fpr": 0.0, "new_rules": 0}] +
-                [{"version": row.get("version"), "asr": row.get("holdout", {}).get("asr", 0.0),
-                 "fpr": row.get("holdout", {}).get("fpr", 0.0),
-                 "new_rules": row.get("hardening_rules_added", 0)}
-                for row in hardening.get("rounds", [])])
-    return {"family_asr": family_rows, "versions": versions, "layer_heatmap": heatmap,
-            "top_breaches": top_breaches,
-            "genetic_history": {"baseline": genetic_baseline.get("history", []),
-                                "firewall": genetic_firewall.get("history", [])},
-            "map_elites_history": {"baseline": map_baseline.get("history", []),
-                                   "firewall": map_firewall.get("history", [])},
-            "map_elites_archive": {
-                "dimensions": map_baseline.get("dimensions", map_firewall.get("dimensions", {})),
-                "baseline": map_baseline.get("archive", []),
-                "firewall": map_firewall.get("archive", []),
-            },
-            "baseline_holdout": baseline_holdout,
-            "utility": {key: utility_report.get(key, default) for key, default in {
-                "task_count": 0, "baseline_success_count": 0, "baseline_success_rate": 0.0,
-                "firewall_success_count": 0, "firewall_success_rate": 0.0,
-                "benign_block_count": 0, "benign_block_rate": 0.0,
-                "baseline_successes_preserved": 0, "utility_retention": 0.0,
-            }.items()}}
+    versions = [
+        {"version": "baseline", "asr": baseline_holdout.get("asr", 0.0), "fpr": 0.0, "new_rules": 0}
+    ] + [
+        {
+            "version": row.get("version"),
+            "asr": row.get("holdout", {}).get("asr", 0.0),
+            "fpr": row.get("holdout", {}).get("fpr", 0.0),
+            "new_rules": row.get("hardening_rules_added", 0),
+        }
+        for row in hardening.get("rounds", [])
+    ]
+    return {
+        "family_asr": family_rows,
+        "versions": versions,
+        "layer_heatmap": heatmap,
+        "top_breaches": top_breaches,
+        "genetic_history": {
+            "baseline": genetic_baseline.get("history", []),
+            "firewall": genetic_firewall.get("history", []),
+        },
+        "map_elites_history": {
+            "baseline": map_baseline.get("history", []),
+            "firewall": map_firewall.get("history", []),
+        },
+        "map_elites_archive": {
+            "dimensions": map_baseline.get("dimensions", map_firewall.get("dimensions", {})),
+            "baseline": map_baseline.get("archive", []),
+            "firewall": map_firewall.get("archive", []),
+        },
+        "baseline_holdout": baseline_holdout,
+        "utility": {
+            key: utility_report.get(key, default)
+            for key, default in {
+                "task_count": 0,
+                "baseline_success_count": 0,
+                "baseline_success_rate": 0.0,
+                "firewall_success_count": 0,
+                "firewall_success_rate": 0.0,
+                "benign_block_count": 0,
+                "benign_block_rate": 0.0,
+                "baseline_successes_preserved": 0,
+                "utility_retention": 0.0,
+            }.items()
+        },
+    }
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -286,13 +376,19 @@ def dashboard() -> str:
 @app.post("/v1/chat/completions", response_model=None)
 def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
     upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
-    configured_model = os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox") if upstream else "sentinelloop-sandbox"
+    configured_model = (
+        os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox")
+        if upstream
+        else "sentinelloop-sandbox"
+    )
     model = request.model or configured_model
     request_id = uuid.uuid4().hex
     firewall = Firewall()
     messages = [dict(message) for message in request.messages]
     untrusted = [message for message in messages if message.get("role") == "user"]
-    checks = [firewall.inspect_input(_text_content(message.get("content"))) for message in untrusted]
+    checks = [
+        firewall.inspect_input(_text_content(message.get("content"))) for message in untrusted
+    ]
     for check in checks:
         _log_inspection(request_id, check)
     blocked = next((check for check in checks if check.verdict == "block"), None)
@@ -311,7 +407,9 @@ def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse
             response_message = result["choices"][0]["message"]
             answer = _text_content(response_message.get("content"))
         except (KeyError, IndexError, TypeError) as error:
-            raise HTTPException(status_code=502, detail="Upstream returned an invalid chat completion") from error
+            raise HTTPException(
+                status_code=502, detail="Upstream returned an invalid chat completion"
+            ) from error
         filtered, output_check = firewall.inspect_output(answer)
         _log_inspection(request_id, output_check)
         response_message["content"] = filtered
@@ -323,18 +421,34 @@ def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse
             policy_reasons = []
             for call in calls:
                 function = call.get("function", {}) if isinstance(call, dict) else {}
-                decision = tool_policy.authorize(function.get("name", ""), function.get("arguments", "{}"))
-                policy_reasons.append(decision.reason if decision.verdict == "block"
-                                      else "policy allows read-only call; execution is not configured")
-                _log_inspection(request_id, Inspection("L4", decision.verdict,
-                                0.0 if decision.verdict == "allow" else 1.0,
-                                decision.reason, 0.0))
+                decision = tool_policy.authorize(
+                    function.get("name", ""), function.get("arguments", "{}")
+                )
+                policy_reasons.append(
+                    decision.reason
+                    if decision.verdict == "block"
+                    else "policy allows read-only call; execution is not configured"
+                )
+                _log_inspection(
+                    request_id,
+                    Inspection(
+                        "L4",
+                        decision.verdict,
+                        0.0 if decision.verdict == "allow" else 1.0,
+                        decision.reason,
+                        0.0,
+                    ),
+                )
             response_message.pop("tool_calls", None)
             response_message.pop("function_call", None)
             reason = "; ".join(policy_reasons) or "tool execution is not configured"
             response_message["content"] = "Tool call blocked: " + reason
-            _log_inspection(request_id, Inspection("L5", "block", 1.0,
-                            "gateway does not forward model-generated tool calls", 0.0))
+            _log_inspection(
+                request_id,
+                Inspection(
+                    "L5", "block", 1.0, "gateway does not forward model-generated tool calls", 0.0
+                ),
+            )
             result["choices"][0]["finish_reason"] = "content_filter"
         elif output_check.verdict == "block":
             result["choices"][0]["finish_reason"] = "content_filter"
@@ -354,7 +468,9 @@ def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse
         if output_check.verdict == "block":
             break
     if not untrusted:
-        response = "I can summarize sandbox email, search fake files, or update the sandbox calendar."
+        response = (
+            "I can summarize sandbox email, search fake files, or update the sandbox calendar."
+        )
     finish_reason = "content_filter" if output_check and output_check.verdict == "block" else "stop"
     result = _completion(request.model, response, finish_reason)
     return _stream_completion(result) if request.stream else result

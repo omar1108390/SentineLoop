@@ -22,15 +22,19 @@ class SimilarityIndex:
         self.examples = []
         for row in examples:
             turns = row.get("turns") or [row["prompt"]]
-            self.examples.extend({"id": f"{row.get('id', 'attack')}-turn-{index}", "prompt": turn}
-                                 for index, turn in enumerate(turns))
+            self.examples.extend(
+                {"id": f"{row.get('id', 'attack')}-turn-{index}", "prompt": turn}
+                for index, turn in enumerate(turns)
+            )
         self.term_counts = [Counter(_tokens(row["prompt"])) for row in self.examples]
         document_frequency: Counter[str] = Counter()
         for terms in self.term_counts:
             document_frequency.update(terms.keys())
         count = max(1, len(self.examples))
-        self.idf = {term: math.log((count + 1) / (frequency + 1)) + 1
-                    for term, frequency in document_frequency.items()}
+        self.idf = {
+            term: math.log((count + 1) / (frequency + 1)) + 1
+            for term, frequency in document_frequency.items()
+        }
         self.vectors = [self._vector(terms) for terms in self.term_counts]
 
     @classmethod
@@ -39,8 +43,11 @@ class SimilarityIndex:
         return cls([row for row in rows if isinstance(row, dict) and row.get("prompt")])
 
     def _vector(self, terms: Counter[str]) -> dict[str, float]:
-        return {term: (1 + math.log(frequency)) * self.idf.get(term, 0.0)
-                for term, frequency in terms.items() if term in self.idf}
+        return {
+            term: (1 + math.log(frequency)) * self.idf.get(term, 0.0)
+            for term, frequency in terms.items()
+            if term in self.idf
+        }
 
     @staticmethod
     def _cosine(first: dict[str, float], second: dict[str, float]) -> float:

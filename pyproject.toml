@@ -13,7 +13,8 @@ dependencies = ["fastapi>=0.110,<1", "uvicorn[standard]>=0.29,<1"]
 train = ["scikit-learn>=1.4,<2"]
 storage = ["psycopg[binary]>=3.2,<4"]
 jobs = ["redis>=5,<7", "rq>=2,<3"]
-dev = ["pytest>=8,<10", "ruff>=0.5,<1"]
+dev = ["black>=24.8,<27", "pre-commit>=3.8,<5", "pytest>=8,<10", "ruff>=0.5,<1"]
+report = ["matplotlib>=3.8,<4"]
 
 [tool.setuptools.packages.find]
 include = ["target_app*", "fuzzer*", "firewall*", "evaluation*", "hardening*"]
@@ -36,3 +37,7 @@ evaluation = ["benign/*.json", "train/*.json", "validation/*.json", "holdout/*.j
 
 
 
+
+[tool.black]
+line-length = 100
+target-version = ['py311']

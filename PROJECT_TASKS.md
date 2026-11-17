@@ -8,12 +8,12 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ## Phase 0: Setup and Planning (Days 1-3)
 
 - [ ] **P0** Create the Git repository with the folder structure from the project description
-- [ ] **P0** Write a short `README.md` (goal, how to run)
-- [ ] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
+- [x] **P0** Write a short `README.md` (goal, how to run)
+- [x] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
 - [x] **P0** Add Docker Compose gateway, PostgreSQL, Redis, RQ worker, and fuzzer profile (sandbox target embedded)
 - [x] **P0** Choose a hosted OpenAI-compatible Groq backend (`openai/gpt-oss-20b` default)
 - [ ] **P0** Test a live Groq completion after the local API key is configured
-- [ ] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
+- [x] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
 - [ ] **P1** Set up experiment tracking (MLflow or W&B) and dataset versioning (DVC)
 - [ ] **P1** Set up GitHub Actions for tests and linting
 
@@ -36,7 +36,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Define outcome labels: `blocked`, `allowed-harmless`, `breach`
 - [ ] **P1** Implement LLM-as-judge with a written rubric for ambiguous cases
 - [ ] **P1** Hand-label 100+ attempts and measure judge accuracy
-- [ ] **P0** Unit tests for each judge rule
+- [x] **P0** Unit tests for each judge rule
 
 **Done when:** you can manually send an injection to the agent, and the judge correctly reports a breach.
 
@@ -132,7 +132,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ## Phase 7: Evaluation and Analysis (Week 6)
 
 - [x] **P0** Ablate the rules, classifier, and similarity input detectors on validation/locked holdout with ASR/FPR/latency
-- [ ] **P0** Extend ablations to output redaction and tool-policy enforcement
+- [x] **P0** Extend ablations to output redaction and tool-policy enforcement
 - [ ] **P0** Compare against baselines (no defense, keyword filter, Prompt Guard / Llama Guard)
 - [ ] **P0** Evaluate on external benchmarks (AgentDojo, BIPIA) for generalization
 - [x] **P0** Compute cluster-bootstrap confidence intervals and paired cluster permutation comparison for the local corpus (external repeated runs pending)
@@ -146,10 +146,10 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ## Phase 8: Documentation and Delivery (Final week)
 
-- [ ] **P0** Final report: motivation, architecture, method, results, limitations, ethics, future work
-- [ ] **P0** Generate all figures from code (reproducible notebooks)
-- [ ] **P0** Polish `README.md` with quick start and one-command demo
-- [ ] **P0** Provide a reproducibility guide (seeds, versions, dataset splits, hardware)
+- [x] **P0** Final report: motivation, architecture, method, results, limitations, ethics, future work
+- [x] **P0** Generate all figures from code (reproducible notebooks)
+- [x] **P0** Polish `README.md` with quick start and one-command demo
+- [x] **P0** Provide a reproducibility guide (seeds, versions, dataset splits, hardware)
 - [ ] **P1** Record a 3-5 minute demo video
 - [ ] **P1** Prepare presentation slides
 - [x] **P1** Add a `SECURITY.md` / responsible-use note

@@ -22,9 +22,13 @@ class Inspection:
 
 
 class Firewall:
-    def __init__(self, rules_path: str | Path | None = None,
-                 similarity_index: SimilarityIndex | None = None, threshold: float | None = None,
-                 injection_model: InjectionModel | None = None) -> None:
+    def __init__(
+        self,
+        rules_path: str | Path | None = None,
+        similarity_index: SimilarityIndex | None = None,
+        threshold: float | None = None,
+        injection_model: InjectionModel | None = None,
+    ) -> None:
         configured_path = rules_path or os.getenv("SENTINELLOOP_RULES_PATH")
         self.exact_rules: tuple[str, ...] = ()
         if configured_path:
@@ -34,8 +38,11 @@ class Firewall:
                 self.exact_rules = tuple(rule["exact"] for rule in data.get("rules", []))
         self.similarity_index = similarity_index or default_index()
         self.injection_model = injection_model or default_model()
-        self.similarity_threshold = threshold if threshold is not None else float(
-            os.getenv("SENTINELLOOP_SIMILARITY_THRESHOLD", "0.55"))
+        self.similarity_threshold = (
+            threshold
+            if threshold is not None
+            else float(os.getenv("SENTINELLOOP_SIMILARITY_THRESHOLD", "0.55"))
+        )
 
     def inspect_input(self, text: str) -> Inspection:
         started = perf_counter()
@@ -54,16 +61,24 @@ class Firewall:
         elif similar:
             reason = f"similar to training attack {nearest} (cosine={similarity:.3f})"
         else:
-            reason = (f"no rule matched; classifier={model_score:.3f}; nearest training attack "
-                      f"{nearest or 'none'} (cosine={similarity:.3f})")
-        return Inspection(layer, "block" if blocked else "allow", score, reason,
-                          (perf_counter() - started) * 1000)
+            reason = (
+                f"no rule matched; classifier={model_score:.3f}; nearest training attack "
+                f"{nearest or 'none'} (cosine={similarity:.3f})"
+            )
+        return Inspection(
+            layer, "block" if blocked else "allow", score, reason, (perf_counter() - started) * 1000
+        )
 
     def inspect_output(self, text: str) -> tuple[str, Inspection]:
         started = perf_counter()
         filtered, blocked, reason = guard_output(text)
-        return filtered, Inspection("L5", "block" if blocked else "allow", float(blocked), reason,
-                                   (perf_counter() - started) * 1000)
+        return filtered, Inspection(
+            "L5",
+            "block" if blocked else "allow",
+            float(blocked),
+            reason,
+            (perf_counter() - started) * 1000,
+        )
 
     def inspect_untrusted(self, text: str) -> Inspection:
         return self.inspect_input(text)
