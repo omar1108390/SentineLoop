@@ -175,7 +175,8 @@ def health() -> dict[str, str]:
 
 @app.get("/v1/models")
 def models() -> dict[str, Any]:
-    model = os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox")
+    upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
+    model = os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox") if upstream else "sentinelloop-sandbox"
     return {"object": "list", "data": [{"id": model, "object": "model", "owned_by": "sentinelloop"}]}
 
 
@@ -279,7 +280,9 @@ def dashboard() -> str:
 
 @app.post("/v1/chat/completions", response_model=None)
 def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
-    model = request.model or os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox")
+    upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
+    configured_model = os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox") if upstream else "sentinelloop-sandbox"
+    model = request.model or configured_model
     request_id = uuid.uuid4().hex
     firewall = Firewall()
     messages = [dict(message) for message in request.messages]
@@ -292,7 +295,6 @@ def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse
         result = _completion(model, "Request blocked by SentinelLoop firewall.", "content_filter")
         return _stream_completion(result) if request.stream else result
 
-    upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
     if upstream:
         payload = request.model_dump(exclude_none=True)
         payload["model"] = model
