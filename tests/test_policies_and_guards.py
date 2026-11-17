@@ -1,3 +1,4 @@
+from firewall import Firewall
 from firewall.layers.output_guard import guard_output
 from firewall.policies.tool_policy import ToolPolicy
 from target_app.agent import CANARY_TOKEN, FAKE_SECRET
@@ -47,3 +48,8 @@ def test_send_email_rejects_non_sandbox_recipient():
 
 def test_malformed_arguments_are_blocked():
     assert ToolPolicy().authorize("read_email", "not json").verdict == "block"
+
+
+def test_benign_ai_inference_question_is_not_blocked():
+    result = Firewall().inspect_input("Please briefly explain the importance of fast AI inference.")
+    assert result.verdict == "allow"

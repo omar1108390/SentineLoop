@@ -1187,7 +1187,7 @@
   ],
   "intercept": -1.1596226816191084,
   "bigrams": true,
-  "threshold": 0.3,
+  "threshold": 0.32,
   "train_rows": 38,
   "train_attacks": 14,
   "train_benign": 24,
