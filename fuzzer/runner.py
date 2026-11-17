@@ -11,6 +11,7 @@ from firewall.gateway.event_store import default_store
 from target_app.agent import DemoAgent
 from target_app.judge import ObjectiveJudge
 
+from .llm_mutator import mutate_with_feedback
 from .mutators import Attack, mutate
 
 ROOT = Path(__file__).resolve().parent
@@ -116,10 +117,30 @@ def main() -> None:
     parser.add_argument(
         "--firewall", action="store_true", help="Enable the local firewall pipeline"
     )
+    parser.add_argument(
+        "--llm-mutations",
+        action="store_true",
+        help="Generate feedback-driven variants with the configured OpenAI-compatible model",
+    )
+    parser.add_argument("--llm-limit", type=int, default=4, help="Maximum seed prompts to mutate")
     parser.add_argument("--output", type=Path, default=None, help="Output file prefix")
     args = parser.parse_args()
     prefix = args.output or Path("artifacts/firewall" if args.firewall else "artifacts/baseline")
-    records, summary = run(load_attacks(args.mutate), args.firewall)
+    attacks = load_attacks(args.mutate)
+    if args.llm_mutations:
+        if args.llm_limit < 1:
+            raise SystemExit("--llm-limit must be at least 1")
+        selected = load_attacks(False)[: args.llm_limit]
+        for seed in selected:
+            probe, _ = run([seed], use_firewall=args.firewall)
+            outcome = probe[0]
+            feedback = (
+                f"Previous outcome: {outcome['outcome']} ({outcome['reason']}); "
+                f"input verdict: {outcome['input_verdict']}; "
+                f"input layers: {outcome['input_layers']}"
+            )
+            attacks.append(mutate_with_feedback(seed, feedback))
+    records, summary = run(attacks, args.firewall)
     prefix.parent.mkdir(parents=True, exist_ok=True)
     artifact_records = [
         {key: value for key, value in record.items() if key != "run_id"} for record in records

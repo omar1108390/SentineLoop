@@ -32,6 +32,7 @@ python -m evaluation.split_corpus
 python -m evaluation.split_corpus --verify
 python -m fuzzer.runner --mutate
 python -m fuzzer.runner --mutate --firewall
+# Optional, uses hosted tokens: python -m fuzzer.runner --mutate --firewall --llm-mutations --llm-limit 4
 python -m evaluation.layer_report
 python -m evaluation.ablation
 python -m evaluation.guard_ablation

@@ -54,7 +54,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Implement paraphrase, base64/ROT13, Unicode, document wrapping, and distractor mutations (translation pending)
 - [x] **P0** Implement fuzzer runner with JSON/CSV artifacts and SQLite/PostgreSQL attempt persistence
 - [x] **P0** Implement seeded genetic search with elite selection, mutation, crossover, and breach fitness
-- [ ] **P1** Add LLM-driven mutation (attacker LLM rewrites payloads using failure feedback)
+- [x] **P1** Add opt-in LLM-driven mutation using sandbox outcome feedback (live provider run pending)
 - [x] **P1** Add multi-turn attack support with persistent conversation state
 - [x] **P0** Run reproducible no-firewall baseline and report ASR per family
 
