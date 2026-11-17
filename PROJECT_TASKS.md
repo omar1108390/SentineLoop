@@ -34,7 +34,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ### Judge
 - [x] **P0** Implement objective checks for canary leakage, forbidden tool calls, and unexpected state
 - [x] **P0** Define outcome labels: `blocked`, `allowed-harmless`, `breach`
-- [ ] **P1** Implement LLM-as-judge with a written rubric for ambiguous cases
+- [x] **P1** Implement optional tool-free LLM-as-judge with a written rubric for ambiguous cases
 - [ ] **P1** Hand-label 100+ attempts and measure judge accuracy
 - [x] **P0** Unit tests for each judge rule
 

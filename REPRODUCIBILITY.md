@@ -52,3 +52,7 @@ docker compose up --build
 ```
 
 Open `http://127.0.0.1:8000/docs` for API exploration and `http://127.0.0.1:8000/dashboard` for the local dashboard. The demo tools store only in-memory fake data; the database stores firewall and fuzzer event records. No real email, calendar, or network tool is invoked by the sandbox target.
+
+## Optional model-assisted evaluation
+
+LLMJudge and the --llm-mutations fuzzer mode are opt-in. Set SENTINELLOOP_JUDGE_MODEL or SENTINELLOOP_ATTACKER_MODEL to override the shared configured model. In Docker Compose's 	ools profile these environment variables are forwarded from your ignored .env. Model judgments are advisory and must not replace human labels until validated against an independent labeled sample.
