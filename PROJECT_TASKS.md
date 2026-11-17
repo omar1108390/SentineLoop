@@ -7,15 +7,16 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 ## Phase 0: Setup and Planning (Days 1-3)
 
-- [ ] **P0** Create the Git repository with the folder structure from the project description
+- [x] **P0** Create the Git repository with the folder structure from the project description
 - [x] **P0** Write a short `README.md` (goal, how to run)
 - [x] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
 - [x] **P0** Add Docker Compose gateway, PostgreSQL, Redis, RQ worker, and fuzzer profile (sandbox target embedded)
 - [x] **P0** Choose a hosted OpenAI-compatible Groq backend (`openai/gpt-oss-20b` default)
 - [ ] **P0** Test a live Groq completion after the local API key is configured
 - [x] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
-- [ ] **P1** Set up experiment tracking (MLflow or W&B) and dataset versioning (DVC)
-- [ ] **P1** Set up GitHub Actions for tests and linting
+- [x] **P1** Set up local MLflow experiment tracking and hash-locked dataset manifest versioning
+- [ ] **P1** Add DVC remote storage for dataset artifact versioning
+- [x] **P1** Set up GitHub Actions for tests, linting, and sandbox regression gating
 
 **Done when:** `docker compose up` starts empty services and a hello-world LLM call works.
 
@@ -79,7 +80,8 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P1** **L3 Quarantine (dual-LLM):** small model reads untrusted content without tools, outputs validated JSON only
 
 ### Baselines and measurement
-- [ ] **P1** Add off-the-shelf baselines (Prompt Guard, Llama Guard, keyword filter) for comparison
+- [x] **P1** Add no-defense and keyword-filter baselines for comparison
+- [ ] **P1** Add Prompt Guard and Llama Guard model baselines
 - [x] **P0** Run fuzzer against prototype firewall and record ASR, benign block rate, and inspection latency (broader benchmark pending)
 - [x] **P0** Tag firewall v1 in local MLflow runs with corpus manifest hash
 
@@ -108,7 +110,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Evaluate each rule version on SHA-256-locked holdout data that is excluded from hardening
 - [x] **P0** Implement one command for attack, judge, analyze, harden, and holdout re-evaluation
 - [x] **P0** Run four rounds (v0 to v4) and record metrics (no bypasses were found, so no hardening rules were added)
-- [ ] **P1** Automate the loop in GitHub Actions as a red-team regression test
+- [x] **P1** Automate sandbox regression checks in GitHub Actions
 - [ ] **P2** Add taint tracking / provenance labels enforced at tool-call time
 
 **Done when:** you have a table and graph of ASR and FPR across firewall versions, including holdout results.
@@ -133,12 +135,13 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 
 - [x] **P0** Ablate the rules, classifier, and similarity input detectors on validation/locked holdout with ASR/FPR/latency
 - [x] **P0** Extend ablations to output redaction and tool-policy enforcement
-- [ ] **P0** Compare against baselines (no defense, keyword filter, Prompt Guard / Llama Guard)
+- [x] **P0** Compare no-defense and keyword-filter baselines on validation/holdout
+- [ ] **P0** Compare Prompt Guard and Llama Guard baselines
 - [ ] **P0** Evaluate on external benchmarks (AgentDojo, BIPIA) for generalization
 - [x] **P0** Compute cluster-bootstrap confidence intervals and paired cluster permutation comparison for the local corpus (external repeated runs pending)
 - [x] **P0** Measure deterministic benign-task success with vs. without the firewall using 30 manually labeled sandbox prompts
 - [ ] **P1** Report judge accuracy versus hand labels
-- [ ] **P1** Analyze remaining weaknesses: which families still succeed and why
+- [x] **P1** Analyze remaining weaknesses by family (for the included synthetic corpus)
 - [ ] **P1** Compare with existing tools (garak, PyRIT, promptfoo) on the same target
 - [ ] **P2** One research add-on: activation probing, multimodal injections, or Z3 policy verification
 
@@ -153,7 +156,8 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P1** Record a 3-5 minute demo video
 - [ ] **P1** Prepare presentation slides
 - [x] **P1** Add a `SECURITY.md` / responsible-use note
-- [ ] **P1** Clean the code, add tests, tag release `v1.0`
+- [x] **P1** Clean code and add regression tests
+- [ ] **P1** Tag release `v1.0` after the remaining research items are resolved
 
 ---
 

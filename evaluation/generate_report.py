@@ -20,20 +20,18 @@ def read_json(path: str) -> dict:
 def main() -> None:
     FIGURES.mkdir(parents=True, exist_ok=True)
     stats = read_json("benchmark-stats.json")
+    baseline = read_json("baseline.json")["summary"]
+    firewall = read_json("firewall.json")["summary"]
     comparisons = read_json("baseline-comparison.json")
     guards = read_json("guard-ablation.json")
     utility = read_json("utility-report.json")
     input_ablation = read_json("ablation.json")
     closed_loop = read_json("closed_loop/report.json")
 
-    baseline_total = sum(row["attempts"] for row in read_json("baseline.json")["summary"].values())
-    baseline_breaches = sum(
-        row["breaches"] for row in read_json("baseline.json")["summary"].values()
-    )
-    firewall_total = sum(row["attempts"] for row in read_json("firewall.json")["summary"].values())
-    firewall_breaches = sum(
-        row["breaches"] for row in read_json("firewall.json")["summary"].values()
-    )
+    baseline_total = sum(row["attempts"] for row in baseline.values())
+    baseline_breaches = sum(row["breaches"] for row in baseline.values())
+    firewall_total = sum(row["attempts"] for row in firewall.values())
+    firewall_breaches = sum(row["breaches"] for row in firewall.values())
     baseline_asr, firewall_asr = (
         baseline_breaches / baseline_total,
         firewall_breaches / firewall_total,
@@ -65,6 +63,23 @@ def main() -> None:
     ax.legend(frameon=False)
     fig.tight_layout()
     fig.savefig(FIGURES / "attack-outcomes.png", dpi=160)
+    plt.close(fig)
+
+    families = sorted(set(baseline) | set(firewall))
+    positions = range(len(families))
+    family_baseline_asr = [baseline[name]["asr"] for name in families]
+    family_firewall_asr = [firewall[name]["asr"] for name in families]
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.barh([v - width / 2 for v in positions], family_baseline_asr, width,
+            label="No defense", color="#bb4b55")
+    ax.barh([v + width / 2 for v in positions], family_firewall_asr, width,
+            label="Layered firewall", color="#247b72")
+    ax.set(yticks=list(positions), yticklabels=families, xlabel="Attack success rate",
+           xlim=(0, 1), title="Generated attack success by family")
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    fig.savefig(FIGURES / "family-weaknesses.png", dpi=160)
     plt.close(fig)
 
     rows = holdout
@@ -143,6 +158,10 @@ SentinelLoop is a sandboxed prototype for studying prompt-injection defense. It 
 ![Generated attack outcomes](artifacts/figures/attack-outcomes.png)
 
 The deterministic mutation artifact contains **{baseline_breaches}/{baseline_total}** baseline breaches ({baseline_asr:.1%}) and **{firewall_breaches}/{firewall_total}** with the layered input firewall ({firewall_asr:.1%}). Across {stats['seed_clusters']} source-seed clusters, the baseline 95% cluster-bootstrap interval is {stats['baseline_asr_ci95'][0]:.1%}–{stats['baseline_asr_ci95'][1]:.1%}. No firewall cluster breached; the 95% Wilson interval for an affected source cluster is {stats['firewall_seed_cluster_breach_rate_ci95_wilson'][0]:.1%}–{stats['firewall_seed_cluster_breach_rate_ci95_wilson'][1]:.1%}. The paired cluster sign-flip estimate is p={stats['cluster_permutation']['two_sided_p_value']:.5g}.
+
+![Generated attack success by family](artifacts/figures/family-weaknesses.png)
+
+Without defenses, delimiter and indirect-injection families were prominent weak spots in this corpus. The layered input firewall recorded no breaches in the generated mutation run. This is a result on the included deterministic agent and mutation operators only; it does not imply those attack families are generally solved.
 
 ![Holdout input-defense comparison](artifacts/figures/holdout-defense-comparison.png)
 

@@ -20,3 +20,5 @@ jobs:
       - run: python -m ruff check .
       - run: python -m black --check firewall fuzzer target_app evaluation hardening tests
       - run: python -m pytest -q
+      - name: Run sandbox red-team regression gate
+        run: python -m evaluation.regression_gate
