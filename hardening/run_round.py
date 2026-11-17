@@ -3,13 +3,12 @@
 import argparse
 import json
 import os
-from collections import Counter
 from pathlib import Path
 
+from evaluation.split_corpus import verify
 from firewall.layers.normalizer import normalize
 from fuzzer.mutators import Attack, mutate
 from fuzzer.runner import run
-from evaluation.split_corpus import verify
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = ROOT / "evaluation"

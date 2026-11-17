@@ -6,6 +6,7 @@ from pathlib import Path
 
 from firewall.layers.l1_model import InjectionModel
 from firewall.layers.similarity import SimilarityIndex
+
 from .layer_report import evaluate_split
 from .split_corpus import verify
 

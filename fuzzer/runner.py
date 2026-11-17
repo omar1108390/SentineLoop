@@ -10,6 +10,7 @@ from firewall import Firewall
 from firewall.gateway.event_store import default_store
 from target_app.agent import DemoAgent
 from target_app.judge import ObjectiveJudge
+
 from .mutators import Attack, mutate
 
 ROOT = Path(__file__).resolve().parent

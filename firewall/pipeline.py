@@ -1,8 +1,8 @@
 """Composable synchronous firewall pipeline with structured layer results."""
 
-from dataclasses import asdict, dataclass
 import json
 import os
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import perf_counter
 

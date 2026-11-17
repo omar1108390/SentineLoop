@@ -16,8 +16,8 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from firewall import Firewall, Inspection
-from firewall.policies.tool_policy import ToolPolicy
 from firewall.gateway.event_store import default_store
+from firewall.policies.tool_policy import ToolPolicy
 from target_app.agent import DemoAgent
 
 
@@ -340,7 +340,9 @@ def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse
             result["choices"][0]["finish_reason"] = "content_filter"
         return _stream_completion(result) if request.stream else result
 
-    guard = lambda text: _inspect_untrusted(firewall, request_id, text)
+    def guard(text: str) -> bool:
+        return _inspect_untrusted(firewall, request_id, text)
+
     agent = DemoAgent()
     response = ""
     output_check = None

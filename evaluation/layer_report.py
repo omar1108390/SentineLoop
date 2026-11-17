@@ -9,6 +9,7 @@ from time import perf_counter
 from firewall.layers.classifier import classify
 from firewall.layers.l1_model import InjectionModel
 from firewall.layers.similarity import SimilarityIndex
+
 from .split_corpus import verify
 
 ROOT = Path(__file__).resolve().parent
@@ -26,7 +27,7 @@ def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshol
     prompts = row.get("turns") or [row["prompt"]]
     enabled = enabled_layers if enabled_layers is not None else {"rules", "classifier", "similarity"}
     start = perf_counter()
-    rule_hit = model_hit = similarity_hit = False
+    rule_hit = similarity_hit = False
     model_score, similarity, nearest = 0.0, 0.0, ""
     for prompt in prompts:
         if "rules" in enabled:
@@ -34,8 +35,7 @@ def score_row(row: dict, index: SimilarityIndex, model: InjectionModel, threshol
             rule_hit = rule_hit or matched
         if "classifier" in enabled:
             score = model.score(prompt)
-            if score > model_score:
-                model_score = score
+            model_score = max(model_score, score)
         if "similarity" in enabled:
             score, example = index.score(prompt)
             if score > similarity:

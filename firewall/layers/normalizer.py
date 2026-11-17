@@ -14,7 +14,7 @@ def normalize(text: str) -> str:
     value = unicodedata.normalize("NFKC", text).translate(ZERO_WIDTH)
     value = unescape(unquote(value))
     # Include HTML comments and tags' text in inspection; remove markup afterwards.
-    value = re.sub(r"<!--(.*?)-->", r" \1 ", value, flags=re.S)
+    value = re.sub(r"<!--(.*?)-->", r" \1 ", value, flags=re.DOTALL)
     value = re.sub(r"<[^>]*>", " ", value)
     candidates = [value]
     for token in re.findall(r"(?<!\w)[A-Za-z0-9+/]{16,}={0,2}(?!\w)", value):
