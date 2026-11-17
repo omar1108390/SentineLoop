@@ -67,6 +67,7 @@ python -m evaluation.layer_report
 python -m evaluation.ablation  # disable each input detector in turn on validation/locked holdout
 python -m evaluation.guard_ablation  # measure output redaction and tool-policy defenses
 python -m evaluation.compare_baselines  # compare no defense, keyword, and layered firewall
+python -m evaluation.search_comparison  # compare GA and MAP-Elites archives
 python -m evaluation.generate_report  # regenerate REPORT.md and figures
 python -m evaluation.benchmark_stats  # clustered uncertainty and paired comparison for benchmark artifacts
 python -m evaluation.utility_report  # full benign-task success with and without the firewall
@@ -89,7 +90,7 @@ The current local corpus has 24 attack seeds (including four two-turn attacks) a
 - `firewall/gateway/app.py`: HTTP API and optional OpenAI-compatible upstream.
 - `firewall/layers/`: normalizer, heuristic rules, trained L1 model, TF-IDF similarity, exact-match hardening, and output guard.
 - `firewall/policies/`: allowlisted fake-tool arguments and approval rules.
-- `evaluation/`: 30 benign tasks and expected actions, train/validation/holdout split, utility report, ablations, bootstrap statistics, and layer metrics.
+- `evaluation/`: 30 benign tasks and expected actions, train/validation/holdout split, utility report, ablations, bootstrap statistics, layer metrics, and GA/MAP-Elites comparison.
 - `hardening/run_round.py`: reproducible attack/judge/analyze/harden/holdout loop.
 - `artifacts/`: sample benchmark output.
 

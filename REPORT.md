@@ -35,6 +35,10 @@ On the 30-prompt benign utility benchmark, the baseline and firewall each comple
 
 The closed loop ran 5 versions (v0: 0 training breaches, 0 rules added, v1: 0 training breaches, 0 rules added, v2: 0 training breaches, 0 rules added, v3: 0 training breaches, 0 rules added, v4: 0 training breaches, 0 rules added). No training bypasses were found in those rounds, so no hardening rules were added and there is no measured adaptation gain.
 
+![Exploratory GA and MAP-Elites archive comparison](artifacts/figures/search-diversity.png)
+
+The stored no-firewall search archives contain 5 occupied family/technique cells and 8 breach candidates for GA, versus 25 cells and 24 candidates for MAP-Elites. These runs used different budgets (4 vs. 10 recorded history entries); this is an exploratory descriptive comparison, not a controlled algorithm ranking.
+
 ## Limitations and remaining work
 
 - The attack corpus and target are synthetic, intentionally simple, and small. A 6-attack holdout cannot establish general robustness.

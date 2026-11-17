@@ -1,0 +1,43 @@
+{
+  "scope": "descriptive archived-candidate comparison; stored runs used different search budgets",
+  "baseline": {
+    "genetic": {
+      "archive_size": 12,
+      "successful_candidates": 8,
+      "unique_families": 2,
+      "unique_techniques": 5,
+      "family_technique_cells": 5,
+      "search_steps": 4,
+      "seed": 42
+    },
+    "map_elites": {
+      "archive_size": 25,
+      "successful_candidates": 24,
+      "unique_families": 6,
+      "unique_techniques": 5,
+      "family_technique_cells": 25,
+      "search_steps": 10,
+      "seed": 42
+    }
+  },
+  "firewall": {
+    "genetic": {
+      "archive_size": 12,
+      "successful_candidates": 0,
+      "unique_families": 2,
+      "unique_techniques": 5,
+      "family_technique_cells": 5,
+      "search_steps": 4,
+      "seed": 42
+    },
+    "map_elites": {
+      "archive_size": 25,
+      "successful_candidates": 0,
+      "unique_families": 6,
+      "unique_techniques": 5,
+      "family_technique_cells": 25,
+      "search_steps": 10,
+      "seed": 42
+    }
+  }
+}

@@ -94,7 +94,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Define MAP-Elites behavior dimensions as attack family x mutation technique
 - [x] **P0** Implement MAP-Elites archive and mutation emitter with breach fitness (custom implementation; pyribs integration pending)
 - [x] **P1** Visualize archive cells by family and mutation technique with best fitness and outcome
-- [ ] **P1** Compare GA vs. MAP-Elites on attack diversity and bypass count
+- [x] **P1** Compare GA vs. MAP-Elites archive diversity and bypass candidates (exploratory; search budgets differ)
 - [x] **P1** Queue asynchronous fuzzer runs with Redis + RQ worker
 - [ ] **P2** RL fine-tune a small attacker model (TRL, GRPO/PPO) with bypass as reward
 

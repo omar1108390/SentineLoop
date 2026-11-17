@@ -23,6 +23,7 @@ def main() -> None:
     baseline = read_json("baseline.json")["summary"]
     firewall = read_json("firewall.json")["summary"]
     comparisons = read_json("baseline-comparison.json")
+    search_comparison = read_json("search-comparison.json")
     guards = read_json("guard-ablation.json")
     utility = read_json("utility-report.json")
     input_ablation = read_json("ablation.json")
@@ -70,12 +71,27 @@ def main() -> None:
     family_baseline_asr = [baseline[name]["asr"] for name in families]
     family_firewall_asr = [firewall[name]["asr"] for name in families]
     fig, ax = plt.subplots(figsize=(9, 5))
-    ax.barh([v - width / 2 for v in positions], family_baseline_asr, width,
-            label="No defense", color="#bb4b55")
-    ax.barh([v + width / 2 for v in positions], family_firewall_asr, width,
-            label="Layered firewall", color="#247b72")
-    ax.set(yticks=list(positions), yticklabels=families, xlabel="Attack success rate",
-           xlim=(0, 1), title="Generated attack success by family")
+    ax.barh(
+        [v - width / 2 for v in positions],
+        family_baseline_asr,
+        width,
+        label="No defense",
+        color="#bb4b55",
+    )
+    ax.barh(
+        [v + width / 2 for v in positions],
+        family_firewall_asr,
+        width,
+        label="Layered firewall",
+        color="#247b72",
+    )
+    ax.set(
+        yticks=list(positions),
+        yticklabels=families,
+        xlabel="Attack success rate",
+        xlim=(0, 1),
+        title="Generated attack success by family",
+    )
     ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
     ax.legend(frameon=False)
     fig.tight_layout()
@@ -132,7 +148,37 @@ def main() -> None:
     fig.savefig(FIGURES / "output-and-policy.png", dpi=160)
     plt.close(fig)
 
+    labels = ["GA", "MAP-Elites"]
+    baseline_search = search_comparison["baseline"]
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    x = range(len(labels))
+    ax.bar(
+        [v - width / 2 for v in x],
+        [baseline_search[key]["family_technique_cells"] for key in ("genetic", "map_elites")],
+        width,
+        label="Occupied family×technique cells",
+        color="#247b72",
+    )
+    ax.bar(
+        [v + width / 2 for v in x],
+        [baseline_search[key]["successful_candidates"] for key in ("genetic", "map_elites")],
+        width,
+        label="Archived breach candidates",
+        color="#bb4b55",
+    )
+    ax.set(
+        xticks=list(x),
+        xticklabels=labels,
+        ylabel="Count",
+        title="Exploratory search archives (no firewall)",
+    )
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    fig.savefig(FIGURES / "search-diversity.png", dpi=160)
+    plt.close(fig)
+
     rounds = closed_loop["rounds"]
+    ga, map_elites = baseline_search["genetic"], baseline_search["map_elites"]
     round_rows = ", ".join(
         f"v{row['version']}: {row.get('training_breaches', 0)} training breaches, "
         f"{row.get('hardening_rules_added', 0)} rules added"
@@ -174,6 +220,10 @@ In the locked holdout, the unprotected demo agent exposed the canary in {guard['
 On the 30-prompt benign utility benchmark, the baseline and firewall each completed {utility['baseline_success_count']}/{utility['task_count']} tasks; benign block rate was {utility['benign_block_rate']:.1%}. Measured local input-inspection p95 is reported in `artifacts/layer-evaluation.json`; it is not a hosted-model end-to-end latency measurement.
 
 The closed loop ran {len(rounds)} versions ({round_rows}). No training bypasses were found in those rounds, so no hardening rules were added and there is no measured adaptation gain.
+
+![Exploratory GA and MAP-Elites archive comparison](artifacts/figures/search-diversity.png)
+
+The stored no-firewall search archives contain {ga['family_technique_cells']} occupied family/technique cells and {ga['successful_candidates']} breach candidates for GA, versus {map_elites['family_technique_cells']} cells and {map_elites['successful_candidates']} candidates for MAP-Elites. These runs used different budgets ({ga['search_steps']} vs. {map_elites['search_steps']} recorded history entries); this is an exploratory descriptive comparison, not a controlled algorithm ranking.
 
 ## Limitations and remaining work
 

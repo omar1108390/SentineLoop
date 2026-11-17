@@ -37,6 +37,7 @@ python -m evaluation.layer_report
 python -m evaluation.ablation
 python -m evaluation.guard_ablation
 python -m evaluation.compare_baselines
+python -m evaluation.search_comparison
 python -m evaluation.benchmark_stats
 python -m evaluation.utility_report
 python -m hardening.run_round --rounds 4
