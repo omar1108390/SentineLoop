@@ -13,7 +13,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from firewall import Firewall, Inspection
 from firewall.policies.tool_policy import ToolPolicy
@@ -49,7 +49,9 @@ class FuzzerRunRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    model: str = "sentinelloop-sandbox"
+    model_config = ConfigDict(extra="allow")
+
+    model: str | None = None
     messages: list[dict[str, Any]] = Field(min_length=1)
     temperature: float | None = None
     max_tokens: int | None = None
@@ -277,6 +279,7 @@ def dashboard() -> str:
 
 @app.post("/v1/chat/completions", response_model=None)
 def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
+    model = request.model or os.getenv("SENTINELLOOP_MODEL", "sentinelloop-sandbox")
     request_id = uuid.uuid4().hex
     firewall = Firewall()
     messages = [dict(message) for message in request.messages]
@@ -286,23 +289,24 @@ def chat_completions(request: ChatRequest) -> dict[str, Any] | StreamingResponse
         _log_inspection(request_id, check)
     blocked = next((check for check in checks if check.verdict == "block"), None)
     if blocked:
-        result = _completion(request.model, "Request blocked by SentinelLoop firewall.", "content_filter")
+        result = _completion(model, "Request blocked by SentinelLoop firewall.", "content_filter")
         return _stream_completion(result) if request.stream else result
 
     upstream = os.getenv("SENTINELLOOP_UPSTREAM_URL")
     if upstream:
         payload = request.model_dump(exclude_none=True)
+        payload["model"] = model
         if request.stream:
             # Buffer upstream output so the full answer passes the output guard before any SSE data is sent.
             payload["stream"] = False
         result = _upstream_request(payload, upstream, os.getenv("SENTINELLOOP_API_KEY"))
         try:
-            answer = result["choices"][0]["message"]["content"] or ""
+            response_message = result["choices"][0]["message"]
+            answer = _text_content(response_message.get("content"))
         except (KeyError, IndexError, TypeError) as error:
             raise HTTPException(status_code=502, detail="Upstream returned an invalid chat completion") from error
         filtered, output_check = firewall.inspect_output(answer)
         _log_inspection(request_id, output_check)
-        response_message = result["choices"][0]["message"]
         response_message["content"] = filtered
         # Do not return tool calls to clients without an explicit authorization policy.
         if response_message.get("tool_calls") or response_message.get("function_call"):
