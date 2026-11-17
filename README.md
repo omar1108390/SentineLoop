@@ -64,6 +64,7 @@ python -m pip install -e ".[train]"  # only needed to retrain the L1 model
 python -m hardening.training.train_classifier
 python -m evaluation.layer_report
 python -m evaluation.ablation  # disable each input detector in turn on validation/locked holdout
+python -m evaluation.guard_ablation  # measure output redaction and tool-policy defenses
 python -m evaluation.benchmark_stats  # clustered uncertainty and paired comparison for benchmark artifacts
 python -m evaluation.utility_report  # full benign-task success with and without the firewall
 python -m evaluation.split_corpus --verify
