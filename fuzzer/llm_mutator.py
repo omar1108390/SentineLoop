@@ -44,7 +44,10 @@ def parse_mutation(content: str, parent: Attack) -> Attack:
 def mutate_with_feedback(parent: Attack, feedback: str) -> Attack:
     base_url = os.getenv("SENTINELLOOP_UPSTREAM_URL", "").strip()
     api_key = os.getenv("SENTINELLOOP_API_KEY", "").strip()
-    model = os.getenv("SENTINELLOOP_ATTACKER_MODEL", os.getenv("SENTINELLOOP_MODEL", "")).strip()
+    model = (
+        os.getenv("SENTINELLOOP_ATTACKER_MODEL", "").strip()
+        or os.getenv("SENTINELLOOP_MODEL", "").strip()
+    )
     if not base_url or not api_key or not model:
         raise RuntimeError(
             "Set SENTINELLOOP_UPSTREAM_URL, SENTINELLOOP_API_KEY, and "
