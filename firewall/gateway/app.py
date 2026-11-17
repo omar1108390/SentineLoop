@@ -113,7 +113,12 @@ def _stream_completion(result: dict[str, Any]) -> StreamingResponse:
 
 def _upstream_request(payload: dict[str, Any], base_url: str, api_key: str | None) -> dict[str, Any]:
     url = base_url.rstrip("/") + "/chat/completions"
-    headers = {"Content-Type": "application/json"}
+    # Groq's Cloudflare edge rejects urllib's default Python-urllib signature
+    # with a bare 403 / error 1010. Send a stable, application-specific UA.
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "SentinelLoop/0.1 (OpenAI-compatible client)",
+    }
     if api_key:
         headers["Authorization"] = "Bearer " + api_key
     request = urllib.request.Request(url, json.dumps(payload).encode("utf-8"), headers, method="POST")
