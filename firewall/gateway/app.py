@@ -7,16 +7,18 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+import zipfile
 from collections import deque
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from firewall import Firewall, Inspection
 from firewall.gateway.event_store import default_store
+from firewall.gateway.file_analysis import MAX_FILE_BYTES, analyze_bytes
 from firewall.policies.tool_policy import ToolPolicy
 from target_app.agent import DemoAgent
 
@@ -46,6 +48,8 @@ event_store = default_store()
 class FuzzerRunRequest(BaseModel):
     include_mutations: bool = True
     use_firewall: bool = True
+    prompt: str | None = Field(default=None, max_length=4000)
+    family: str = Field(default="custom", max_length=32)
 
 
 class ChatRequest(BaseModel):
@@ -190,6 +194,8 @@ def submit_fuzzer_run(request: FuzzerRunRequest) -> dict[str, str]:
         "fuzzer.jobs.run_fuzzer_job",
         include_mutations=request.include_mutations,
         use_firewall=request.use_firewall,
+        seed_prompt=request.prompt,
+        family=request.family,
         job_timeout=3600,
     )
     return {"job_id": job.id, "status": "queued"}
@@ -371,6 +377,20 @@ def benchmark_metrics() -> dict[str, Any]:
 def dashboard() -> str:
     page = Path(__file__).with_name("dashboard.html")
     return page.read_text(encoding="utf-8")
+
+
+@app.post("/v1/files/analyze")
+async def analyze_uploaded_file(
+    request: Request, filename: str = "uploaded-file"
+) -> dict[str, Any]:
+    """Statically inspect an upload in memory; never save or execute the submitted bytes."""
+    content = await request.body()
+    if len(content) > MAX_FILE_BYTES:
+        raise HTTPException(status_code=413, detail="File exceeds the 10 MB analysis limit")
+    try:
+        return analyze_bytes(filename, request.headers.get("content-type", ""), content)
+    except (ValueError, OSError, zipfile.BadZipFile) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @app.post("/v1/chat/completions", response_model=None)

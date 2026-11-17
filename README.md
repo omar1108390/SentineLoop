@@ -23,7 +23,7 @@ $body = @{
 Invoke-RestMethod http://127.0.0.1:8000/v1/chat/completions -Method Post -ContentType "application/json" -Body $body
 ```
 
-The gateway checks user prompts and retrieved email content, blocks matching inputs, redacts the fake secret/canary in outputs, and logs each inspection as JSON. The dashboard shows benchmark ASR by attack family and generation, holdout ASR by firewall version, a family/layer heatmap, top baseline breaches, and the latest persisted gateway decisions; SQLite/PostgreSQL keeps them across restarts. Streaming requests return OpenAI-compatible SSE after the complete answer passes the output guard. The gateway buffers upstream output before sending SSE so secrets are filtered before delivery. Upstream-generated tool calls pass the L4 sandbox allowlist and argument checks; side-effect calls require trusted approval. Calls are still withheld from clients because a sandbox tool executor is not connected.
+The gateway checks user prompts and retrieved email content, blocks matching inputs, redacts the fake secret/canary in outputs, and logs each inspection as JSON. SQLite/PostgreSQL keeps decisions across restarts. Streaming requests return OpenAI-compatible SSE after the complete answer passes the output guard. The gateway buffers upstream output before sending SSE so secrets are filtered before delivery. Upstream-generated tool calls pass the L4 sandbox allowlist and argument checks; side-effect calls require trusted approval. Calls are still withheld from clients because a sandbox tool executor is not connected.
 
 For Groq, set `SENTINELLOOP_UPSTREAM_URL=https://api.groq.com/openai/v1`, `SENTINELLOOP_MODEL=openai/gpt-oss-20b`, and `SENTINELLOOP_API_KEY` from your local Groq key. Groq documents that base URL for OpenAI-compatible clients and currently lists `openai/gpt-oss-20b` as a production model. Other providers can use their OpenAI-compatible base URL and model ID. A request may override the model and pass other Chat Completions fields, including `tools`; generated tool calls are still filtered and never executed. For local PowerShell runs, set these in `$env:` before starting Uvicorn; Docker Compose reads values from its environment or `.env`. The gateway never loads `.env` itself. Copy `.env.example` to a local `.env` or export the three values before starting Docker Compose. Keep `.env` untracked; it is ignored by Git. The live Groq request still needs an API key configured locally.
 
@@ -35,7 +35,15 @@ Docker Desktop must be running. From the repository root:
 docker compose up --build
 ```
 
-This starts the gateway on `http://localhost:8000` with the sandbox backend, plus PostgreSQL, Redis, and a background RQ worker. Stop it with `Ctrl+C`; run detached with `docker compose up --build -d` and stop with `docker compose down`. Containers run as an unprivileged user with a read-only root filesystem. Submit an asynchronous run with `POST /v1/fuzzer/runs` and check it with `GET /v1/fuzzer/runs/{job_id}`. For example:
+This starts the gateway on `http://localhost:8000` with the sandbox backend, plus PostgreSQL, Redis, and a background RQ worker. Stop it with `Ctrl+C`; run detached with `docker compose up --build -d` and stop with `docker compose down`. Containers run as an unprivileged user with a read-only root filesystem. Open `http://localhost:8000/dashboard` for the SentinelLoop security workspace. It includes:
+
+- **Overview:** live inspection counts and latency, plus the original project dashboard reports: attack success by family, benign utility, holdout versions, genetic generations, MAP-Elites progress and archive, family/layer activity, baseline breaches, and live decisions.
+- **Playground:** send a chat request through the configured sandbox or hosted OpenAI-compatible model, view the firewall layers and decisions, then reuse a prompt as a fuzzer seed.
+- **File lab:** statically inspect a file up to 10 MB for prompt injection in extracted text and common malware indicators. The upload is analyzed in memory and is never saved or executed. This is not antivirus and a clean result cannot prove safety.
+- **Prompt fuzzer:** queue generated variants of a custom seed or run the existing seed corpus. The Docker Compose Redis service and RQ worker must be running.
+- **Activity:** review the latest persisted gateway decisions.
+
+Submit an asynchronous run with `POST /v1/fuzzer/runs` and check it with `GET /v1/fuzzer/runs/{job_id}`. For example:
 
 ```powershell
 $job = Invoke-RestMethod http://localhost:8000/v1/fuzzer/runs -Method Post -ContentType "application/json" -Body '{"include_mutations":true,"use_firewall":true}'

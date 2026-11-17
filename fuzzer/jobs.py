@@ -6,11 +6,22 @@ import os
 from pathlib import Path
 from typing import Any
 
+from fuzzer.mutators import Attack, mutate
 from fuzzer.runner import load_attacks, run
 
 
-def run_fuzzer_job(include_mutations: bool = True, use_firewall: bool = True) -> dict[str, Any]:
-    records, summary = run(load_attacks(include_mutations), use_firewall)
+def run_fuzzer_job(
+    include_mutations: bool = True,
+    use_firewall: bool = True,
+    seed_prompt: str | None = None,
+    family: str = "custom",
+) -> dict[str, Any]:
+    if seed_prompt:
+        seed = Attack(seed_prompt, family, technique="dashboard-seed")
+        attacks = [seed, *mutate(seed)] if include_mutations else [seed]
+    else:
+        attacks = load_attacks(include_mutations)
+    records, summary = run(attacks, use_firewall)
     job_id = records[0].get("run_id", "unknown") if records else "empty"
     artifacts = Path(os.getenv("SENTINELLOOP_ARTIFACTS_DIR", "artifacts")) / "jobs"
     artifacts.mkdir(parents=True, exist_ok=True)
