@@ -3,6 +3,10 @@ __pycache__/
 .venv/
 .env
 *.egg-info/
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+mlruns/
 
 *.db
 artifacts/jobs/

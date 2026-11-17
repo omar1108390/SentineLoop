@@ -84,6 +84,7 @@ The current local corpus has 24 attack seeds (including four two-turn attacks) a
 - `target_app/judge.py`: objective canary, tool-call, and state-change checks.
 - `target_app/llm_judge.py`: opt-in tool-free LLM second opinion for ambiguous outcomes; the objective judge always wins on clear breaches.
 - `evaluation/JUDGE_RUBRIC.md`: written rubric for LLM judgments.
+- `evaluation/track_experiment.py`: optional MLflow export for version-tagged benchmark metrics and source artifacts.
 - `fuzzer/`: categorized seeds, mutation operators, runner, genetic search, and MAP-Elites.
 - `firewall/gateway/app.py`: HTTP API and optional OpenAI-compatible upstream.
 - `firewall/layers/`: normalizer, heuristic rules, trained L1 model, TF-IDF similarity, exact-match hardening, and output guard.

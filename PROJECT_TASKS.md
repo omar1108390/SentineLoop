@@ -81,7 +81,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 ### Baselines and measurement
 - [ ] **P1** Add off-the-shelf baselines (Prompt Guard, Llama Guard, keyword filter) for comparison
 - [x] **P0** Run fuzzer against prototype firewall and record ASR, benign block rate, and inspection latency (broader benchmark pending)
-- [ ] **P0** Tag firewall v1 in MLflow/W&B
+- [x] **P0** Tag firewall v1 in local MLflow runs with corpus manifest hash
 
 **Done when:** firewall v1 measurably lowers ASR versus baseline, with FPR and latency reported.
 

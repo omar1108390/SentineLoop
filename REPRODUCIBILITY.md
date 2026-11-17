@@ -55,4 +55,15 @@ Open `http://127.0.0.1:8000/docs` for API exploration and `http://127.0.0.1:8000
 
 ## Optional model-assisted evaluation
 
-LLMJudge and the --llm-mutations fuzzer mode are opt-in. Set SENTINELLOOP_JUDGE_MODEL or SENTINELLOOP_ATTACKER_MODEL to override the shared configured model. In Docker Compose's 	ools profile these environment variables are forwarded from your ignored .env. Model judgments are advisory and must not replace human labels until validated against an independent labeled sample.
+`LLMJudge` and the `--llm-mutations` fuzzer mode are opt-in. Set `SENTINELLOOP_JUDGE_MODEL` or `SENTINELLOOP_ATTACKER_MODEL` to override the shared configured model. In Docker Compose's `tools` profile these environment variables are forwarded from your ignored `.env`. Model judgments are advisory and must not replace human labels until validated against an independent labeled sample.
+
+## MLflow experiment tracking
+
+Install the optional extra and log the checked-in evaluation artifacts:
+
+```powershell
+python -m pip install -e ".[tracking]"
+python -m evaluation.track_experiment
+```
+
+The default tracking store is local `mlflow.db` (ignored by Git). Set `MLFLOW_TRACKING_URI` and `MLFLOW_EXPERIMENT_NAME` to use a remote MLflow server or a different experiment. Each run records firewall version, corpus manifest hash, scope tags, benchmark metrics, and source JSON artifacts.
