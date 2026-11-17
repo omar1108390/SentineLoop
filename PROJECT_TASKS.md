@@ -11,7 +11,8 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [ ] **P0** Write a short `README.md` (goal, how to run)
 - [ ] **P0** Set up Python environment (`pyproject.toml` or `requirements.txt`), linting (ruff), formatting (black), pre-commit
 - [x] **P0** Add Docker Compose gateway, PostgreSQL, Redis, RQ worker, and fuzzer profile (sandbox target embedded)
-- [x] **P0** Choose a hosted OpenAI-compatible Groq backend (`openai/gpt-oss-20b` default)\n- [ ] **P0** Test a live Groq completion after the local API key is configured
+- [x] **P0** Choose a hosted OpenAI-compatible Groq backend (`openai/gpt-oss-20b` default)
+- [ ] **P0** Test a live Groq completion after the local API key is configured
 - [ ] **P0** Define the threat model and write the ethics/scope note (sandbox only, fake data)
 - [ ] **P1** Set up experiment tracking (MLflow or W&B) and dataset versioning (DVC)
 - [ ] **P1** Set up GitHub Actions for tests and linting
