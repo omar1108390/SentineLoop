@@ -68,6 +68,7 @@ python -m evaluation.ablation  # disable each input detector in turn on validati
 python -m evaluation.guard_ablation  # measure output redaction and tool-policy defenses
 python -m evaluation.compare_baselines  # compare no defense, keyword, and layered firewall
 python -m evaluation.search_comparison  # compare GA and MAP-Elites archives
+python -m evaluation.export_judge_sample --count 120  # prepare blinded human labels
 python -m evaluation.generate_report  # regenerate REPORT.md and figures
 python -m evaluation.benchmark_stats  # clustered uncertainty and paired comparison for benchmark artifacts
 python -m evaluation.utility_report  # full benign-task success with and without the firewall
@@ -85,6 +86,8 @@ The current local corpus has 24 attack seeds (including four two-turn attacks) a
 - `target_app/judge.py`: objective canary, tool-call, and state-change checks.
 - `target_app/llm_judge.py`: opt-in tool-free LLM second opinion for ambiguous outcomes; the objective judge always wins on clear breaches.
 - `evaluation/JUDGE_RUBRIC.md`: written rubric for LLM judgments.
+- `evaluation/HUMAN_LABEL_GUIDE.md`: instructions for blinded human labels and accuracy scoring.
+- `artifacts/judge-labels.csv`: seeded 120-attempt blinded annotation sample; fill human labels before scoring.
 - `evaluation/track_experiment.py`: optional MLflow export for version-tagged benchmark metrics and source artifacts.
 - `fuzzer/`: categorized seeds, mutation operators, runner, genetic search, and MAP-Elites.
 - `firewall/gateway/app.py`: HTTP API and optional OpenAI-compatible upstream.

@@ -39,6 +39,9 @@ python -m evaluation.guard_ablation
 python -m evaluation.compare_baselines
 python -m evaluation.search_comparison
 python -m evaluation.benchmark_stats
+python -m evaluation.export_judge_sample --count 120
+# After filling 100+ human_label cells, score against the objective judge:
+python -m evaluation.score_human_labels --labels artifacts/judge-labels.csv
 python -m evaluation.utility_report
 python -m hardening.run_round --rounds 4
 python -m evaluation.generate_report

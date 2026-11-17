@@ -36,6 +36,7 @@ Suggested duration: about 6 weeks (adjust to your schedule).
 - [x] **P0** Implement objective checks for canary leakage, forbidden tool calls, and unexpected state
 - [x] **P0** Define outcome labels: `blocked`, `allowed-harmless`, `breach`
 - [x] **P1** Implement optional tool-free LLM-as-judge with a written rubric for ambiguous cases
+- [x] **P1** Prepare a seeded blinded 120-attempt annotation export and accuracy scorer
 - [ ] **P1** Hand-label 100+ attempts and measure judge accuracy
 - [x] **P0** Unit tests for each judge rule
 
