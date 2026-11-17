@@ -1,0 +1,58 @@
+{
+  "scope": "offline deterministic sandbox; Prompt Guard and Llama Guard are not installed or evaluated",
+  "training_data": "evaluation/train/attacks.json",
+  "splits": {
+    "validation": {
+      "no_defense": {
+        "attack_count": 6,
+        "benign_count": 3,
+        "asr": 1.0,
+        "false_positive_rate": 0.0,
+        "p50_latency_ms": 0.00019999788491986692,
+        "p95_latency_ms": 0.00019999788491986692
+      },
+      "keyword_filter": {
+        "attack_count": 6,
+        "benign_count": 3,
+        "asr": 0.33333333333333337,
+        "false_positive_rate": 0.0,
+        "p50_latency_ms": 0.010100000508828089,
+        "p95_latency_ms": 0.010100000508828089
+      },
+      "layered_firewall": {
+        "attack_count": 6,
+        "benign_count": 3,
+        "asr": 0.0,
+        "false_positive_rate": 0.0,
+        "p50_latency_ms": 0.08569999772589654,
+        "p95_latency_ms": 0.08569999772589654
+      }
+    },
+    "holdout": {
+      "no_defense": {
+        "attack_count": 6,
+        "benign_count": 3,
+        "asr": 1.0,
+        "false_positive_rate": 0.0,
+        "p50_latency_ms": 0.00019999788491986692,
+        "p95_latency_ms": 0.00019999788491986692
+      },
+      "keyword_filter": {
+        "attack_count": 6,
+        "benign_count": 3,
+        "asr": 0.33333333333333337,
+        "false_positive_rate": 0.0,
+        "p50_latency_ms": 0.007499998901039362,
+        "p95_latency_ms": 0.007499998901039362
+      },
+      "layered_firewall": {
+        "attack_count": 6,
+        "benign_count": 3,
+        "asr": 0.0,
+        "false_positive_rate": 0.0,
+        "p50_latency_ms": 0.07839999670977704,
+        "p95_latency_ms": 0.07839999670977704
+      }
+    }
+  }
+}
