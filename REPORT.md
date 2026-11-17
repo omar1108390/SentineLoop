@@ -19,6 +19,10 @@ SentinelLoop is a sandboxed prototype for studying prompt-injection defense. It 
 
 The deterministic mutation artifact contains **97/168** baseline breaches (57.7%) and **0/168** with the layered input firewall (0.0%). Across 24 source-seed clusters, the baseline 95% cluster-bootstrap interval is 48.8%–66.1%. No firewall cluster breached; the 95% Wilson interval for an affected source cluster is 0.0%–13.8%. The paired cluster sign-flip estimate is p=4.9998e-05.
 
+![Generated attack success by family](artifacts/figures/family-weaknesses.png)
+
+Without defenses, delimiter and indirect-injection families were prominent weak spots in this corpus. The layered input firewall recorded no breaches in the generated mutation run. This is a result on the included deterministic agent and mutation operators only; it does not imply those attack families are generally solved.
+
 ![Holdout input-defense comparison](artifacts/figures/holdout-defense-comparison.png)
 
 On the **6 attack / 3 benign** locked holdout, no defense recorded ASR 100.0%; the transparent keyword filter recorded 33.3%; and the layered input firewall recorded 0.0%. Their benign block rates were 0.0%, 0.0%, and 0.0%. This tiny holdout is descriptive only. Removing the classifier in the input-layer ablation raises holdout ASR to 33.3%; removing rules or similarity leaves it at 0.0% and 0.0%, respectively.
