@@ -1,5 +1,5 @@
-"""Input and output inspection for SentinelLoop's sandbox target."""
+"""SentinelLoop firewall: layered prompt-injection defenses for LLM applications."""
 
-from .pipeline import Firewall, Inspection
+from .pipeline import DETECTORS, LAYER_INFO, Firewall, Inspection, LayerResult
 
-__all__ = ["Firewall", "Inspection"]
+__all__ = ["DETECTORS", "LAYER_INFO", "Firewall", "Inspection", "LayerResult"]

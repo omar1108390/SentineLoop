@@ -1,4 +1,18 @@
-"""L4 allowlist policy for the sandbox's fake tool calls."""
+"""L4 Tool policy: decide whether a tool call may run.
+
+Detection can fail, so SentinelLoop also limits what a hijacked assistant is
+*able* to do. Every tool call is checked for:
+
+* **allowlist** - only known sandbox tools exist;
+* **argument shape** - exact argument names, short strings, sandbox IDs only;
+* **destination** - email may only go to the organisation's own domain;
+* **provenance** - a side-effect tool (send email, add event) only runs when the
+  *user* asked for it, never because a retrieved document said so;
+* **approval** - side effects also need explicit approval from the user.
+
+Provenance is tracked by the agent: it knows whether an instruction came from
+the user's message or from an email/file/web page (simple taint tracking).
+"""
 
 import json
 from dataclasses import dataclass
@@ -41,15 +55,13 @@ class ToolPolicy:
         allowed_names = self.read_only | self.approval_required
         if tool_name not in allowed_names:
             return PolicyDecision("block", "tool is not in the sandbox allowlist", tool_name)
-        if any(
-            not isinstance(value, str) or len(value) > self.max_length
-            for value in arguments.values()
-        ):
+        if any(not isinstance(value, str) or len(value) > self.max_length for value in arguments.values()):
             return PolicyDecision("block", "tool arguments must be short strings", tool_name)
         required = {
             "read_email": {"email_id"},
             "search_files": {"query"},
             "calendar_view": set(),
+            "browse": {"url"},
             "calendar_add": {"title", "time"},
             "send_email": {"to", "subject", "body"},
         }[tool_name]
@@ -60,9 +72,7 @@ class ToolPolicy:
                 tool_name,
             )
         if tool_name == "read_email" and not arguments["email_id"].startswith("email-"):
-            return PolicyDecision(
-                "block", "email_id is outside the fake sandbox namespace", tool_name
-            )
+            return PolicyDecision("block", "email_id is outside the fake sandbox namespace", tool_name)
         if tool_name == "send_email":
             recipient = arguments["to"].rsplit("@", 1)
             if len(recipient) != 2 or recipient[1].lower() not in self.domains:
@@ -75,7 +85,5 @@ class ToolPolicy:
                     "block", "side-effect tool was requested from untrusted provenance", tool_name
                 )
             if not approval_granted:
-                return PolicyDecision(
-                    "block", "explicit trusted user approval is required", tool_name
-                )
+                return PolicyDecision("block", "explicit trusted user approval is required", tool_name)
         return PolicyDecision("allow", "tool name and arguments satisfy sandbox policy", tool_name)

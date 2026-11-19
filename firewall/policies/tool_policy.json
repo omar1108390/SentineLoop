@@ -2,7 +2,8 @@
   "read_only_tools": [
     "read_email",
     "search_files",
-    "calendar_view"
+    "calendar_view",
+    "browse"
   ],
   "approval_required_tools": [
     "send_email",
