@@ -1,176 +1,240 @@
-"""Run attack, judge, analyze, exact-rule hardening, and locked-holdout evaluation."""
+"""The closed loop: attack -> judge -> analyse -> harden -> re-evaluate.
+
+Each round ``vN``:
+
+1. **Attack** the *training* attacks with every mutation operator plus a short
+   genetic search against the current detectors (``vN`` model, rules and index).
+2. **Judge** every attempt with the objective judge; collect the breaches.
+3. **Analyse** the breaches by family and technique.
+4. **Harden** the detectors for ``vN+1``:
+   * retrain the ML classifier on training data + every bypass found so far,
+     re-tuning its threshold on the validation split;
+   * add the bypasses to the similarity index of known attacks;
+   * add exact normalized signatures of the bypasses as hardened rules.
+5. **Re-evaluate** on the SHA-256-locked holdout (seeds + mutations), which is
+   never used for training, to show whether the gains generalise.
+
+    python -m hardening.run_round --rounds 3 [--promote]
+
+``--promote`` copies the final model and attack index into ``firewall/models``
+so the gateway and later benchmarks use the hardened detectors.
+"""
+
+from __future__ import annotations
 
 import argparse
 import json
-import os
+import random
+import shutil
+from collections import Counter
 from pathlib import Path
 
 from evaluation.split_corpus import verify
+from firewall import Firewall
+from firewall.layers.ml_classifier import InjectionModel
 from firewall.layers.normalizer import normalize
-from fuzzer.mutators import Attack, mutate
-from fuzzer.runner import run
+from firewall.layers.similarity import SimilarityIndex, attacker_texts
+from fuzzer.mutators import compose, mutate
+from fuzzer.search.genetic import search as genetic_search
+from hardening.training.train_classifier import (
+    choose_similarity_threshold,
+    choose_threshold,
+    train,
+    training_texts,
+)
+from sentinelloop.corpus import Attack, load_split
+from sentinelloop.harness import run_scenario
 
 ROOT = Path(__file__).resolve().parents[1]
-EVAL = ROOT / "evaluation"
-OUT = ROOT / "artifacts" / "closed_loop"
+OUT = ROOT / "artifacts" / "hardening"
+MODELS = ROOT / "firewall" / "models"
 
 
-def load_rows(split: str, kind: str) -> list[dict]:
-    return json.loads((EVAL / split / f"{kind}.json").read_text(encoding="utf-8"))
+def _rows(split: str, kind: str) -> list[dict]:
+    return json.loads((ROOT / "evaluation" / split / f"{kind}.json").read_text(encoding="utf-8"))
 
 
-def attacks_from(split: str, kind: str = "attacks") -> list[Attack]:
-    return [
-        Attack(row["prompt"], row["family"], "seed", row["id"], tuple(row.get("turns", [])))
-        for row in load_rows(split, kind)
-    ]
+def _as_row(attack: Attack) -> dict:
+    return {"id": attack.id or "bypass", "family": attack.family, "channel": attack.channel,
+            "prompt": attack.prompt, "turns": list(attack.turns)}  # fmt: skip
 
 
-def evaluate_with_rules(attacks: list[Attack], benign: list[Attack], rules_path: Path) -> dict:
-    prior = os.environ.get("SENTINELLOOP_RULES_PATH")
-    os.environ["SENTINELLOOP_RULES_PATH"] = str(rules_path)
-    try:
-        attack_records, attack_summary = run(attacks, use_firewall=True)
-        benign_records, _ = run(benign, use_firewall=True)
-    finally:
-        if prior is None:
-            os.environ.pop("SENTINELLOOP_RULES_PATH", None)
-        else:
-            os.environ["SENTINELLOOP_RULES_PATH"] = prior
-    breach_count = sum(record["outcome"] == "breach" for record in attack_records)
-    blocked_benign = sum(
-        record["input_verdict"] == "block" or record["output_verdict"] == "block"
-        for record in benign_records
+def build_firewall(version_dir: Path) -> Firewall:
+    index_rows = json.loads((version_dir / "attack_index.json").read_text(encoding="utf-8"))
+    return Firewall(
+        rules_path=version_dir / "rules.json",
+        similarity_index=SimilarityIndex(index_rows),
+        injection_model=InjectionModel(version_dir / "model.json"),
     )
-    return {
-        "asr": breach_count / len(attack_records) if attack_records else 0.0,
-        "breaches": breach_count,
-        "attack_count": len(attack_records),
-        "fpr": blocked_benign / len(benign_records) if benign_records else 0.0,
-        "benign_blocked": blocked_benign,
-        "benign_count": len(benign_records),
-        "by_family": attack_summary,
+
+
+def evaluate(firewall: Firewall, split: str) -> dict:
+    """ASR on the split's attacks + all their mutations, and benign false-positive rate."""
+    seeds = load_split(split, "attacks")
+    pool = seeds + [variant for attack in seeds for variant in mutate(attack)]
+    result = {}
+    for profile in ("detectors", "full"):
+        outcomes = [run_scenario(attack, profile, firewall) for attack in pool]
+        breaches = [row for row in outcomes if row["outcome"] == "breach"]
+        by_family = Counter(row["family"] for row in breaches)
+        result[profile] = {
+            "attempts": len(outcomes),
+            "breaches": len(breaches),
+            "asr": len(breaches) / len(outcomes) if outcomes else 0.0,
+            "breaches_by_family": dict(sorted(by_family.items())),
+        }
+    benign = load_split(split, "benign")
+    blocked = 0
+    for attack in benign:
+        row = run_scenario(attack, "detectors", firewall)
+        blocked += any(layer in {"rules", "classifier", "similarity"} for layer in row["stopped_by"])
+    result["benign"] = {
+        "count": len(benign),
+        "blocked": blocked,
+        "fpr": blocked / len(benign) if benign else 0.0,
     }
+    return result
 
 
-def build_training_data(
-    records: list[dict[str, str]], benign_rows: list[dict], rules: list[dict]
-) -> tuple[list[dict], list[dict]]:
-    benign_texts = [normalize(row["prompt"]).split("\n", 1)[0] for row in benign_rows]
-    known = {rule["exact"] for rule in rules}
-    dataset, additions = [], []
-    for row in records:
-        if row["outcome"] != "breach":
-            continue
-        prompts = json.loads(row.get("turns", "[]")) or [row["prompt"]]
-        for prompt in prompts:
-            dataset.append(
-                {"text": prompt, "label": 1, "source": "observed-breach", "family": row["family"]}
-            )
-            signature = normalize(prompt).split("\n", 1)[0]
-            if (
-                not signature
-                or signature in known
-                or any(signature in benign for benign in benign_texts)
-            ):
-                continue
-            rule = {
-                "id": "exact-" + str(len(rules) + len(additions) + 1).zfill(4),
-                "exact": signature,
-                "family": row["family"],
-            }
-            additions.append(rule)
-            known.add(signature)
-    dataset.extend(
-        {"text": row["prompt"], "label": 0, "source": "benign-counterexample", "family": "benign"}
-        for row in benign_rows
+def attack_training_split(firewall: Firewall, round_seed: int) -> tuple[list[Attack], dict]:
+    seeds = load_split("train", "attacks")
+    rng = random.Random(round_seed)
+    pool = seeds + [variant for attack in seeds for variant in mutate(attack)]
+    pool += [variant for attack in seeds for variant in compose(attack, rng)]
+    breaches: dict[tuple, Attack] = {}
+    for attack in pool:
+        if run_scenario(attack, "detectors", firewall)["outcome"] == "breach":
+            breaches[(attack.channel, attack.prompt, attack.turns)] = attack
+    evolved = genetic_search(6, 30, round_seed, "detectors", firewall, seeds)
+    for row in evolved["archive"]:
+        if row["fitness"] >= 1:
+            attack = Attack(row["prompt"], row["family"], row["technique"], "genetic",
+                            tuple(row["turns"]), row["channel"])  # fmt: skip
+            breaches.setdefault((attack.channel, attack.prompt, attack.turns), attack)
+    found = list(breaches.values())
+    analysis = {
+        "attempts": len(pool) + evolved["evaluations"],
+        "breaches": len(found),
+        "by_family": dict(sorted(Counter(item.family for item in found).items())),
+        "by_technique": dict(sorted(Counter(item.technique for item in found).items())),
+    }
+    return found, analysis
+
+
+def write_version(version_dir: Path, model: dict, index_rows: list[dict], rules: list[dict]) -> None:
+    version_dir.mkdir(parents=True, exist_ok=True)
+    (version_dir / "model.json").write_text(json.dumps(model, separators=(",", ":")), encoding="utf-8")
+    (version_dir / "attack_index.json").write_text(
+        json.dumps(index_rows, indent=1, ensure_ascii=False), encoding="utf-8"
     )
-    return dataset, additions
+    (version_dir / "rules.json").write_text(
+        json.dumps({"rules": rules}, indent=1, ensure_ascii=False), encoding="utf-8"
+    )
 
 
-def run_rounds(rounds: int = 3) -> dict:
+def run_rounds(rounds: int = 3, promote: bool = False) -> dict:
     if rounds < 1:
         raise ValueError("rounds must be at least 1")
     if not verify():
         raise RuntimeError("Locked holdout integrity check failed; refusing to run hardening")
-    OUT.mkdir(parents=True, exist_ok=True)
-    versions = ROOT / "artifacts" / "firewall_versions"
-    versions.mkdir(parents=True, exist_ok=True)
-    rules = []
+    if OUT.exists():
+        shutil.rmtree(OUT)
+    data_report: dict = {}
+    attack_texts, benign_texts = training_texts(data_report)
+    benign_signatures = [normalize(text).split("\n", 1)[0] for text in benign_texts]
+    index_rows = _rows("train", "attacks")
+    learned_texts: list[str] = []
+    rules: list[dict] = []
+
+    model = train(attack_texts, benign_texts, version="v0")
+    model["threshold"] = choose_threshold(model)
+    model["similarity_threshold"] = choose_similarity_threshold(index_rows)
+    model["data"] = {**data_report, "bypass_texts": 0}
+    write_version(OUT / "v0", model, index_rows, rules)
     reports = []
     for version in range(rounds + 1):
-        rules_path = versions / f"v{version}.json"
-        rules_path.write_text(
-            json.dumps({"version": version, "rules": rules}, indent=2), encoding="utf-8"
+        version_dir = OUT / f"v{version}"
+        firewall = build_firewall(version_dir)
+        entry = {
+            "version": f"v{version}",
+            "classifier_threshold": model["threshold"],
+            "similarity_threshold": model["similarity_threshold"],
+            "classifier_training_attacks": model["train_attacks"],
+            "known_attacks_in_index": len(index_rows),
+            "hardened_rules": len(rules),
+            "validation": evaluate(firewall, "validation"),
+            "holdout": evaluate(firewall, "holdout"),
+        }
+        if version == rounds:
+            reports.append(entry)
+            break
+        found, analysis = attack_training_split(firewall, 100 + version)
+        entry["training_attack"] = analysis
+        reports.append(entry)
+        print(
+            f"v{version}: {analysis['breaches']} training bypasses found; "
+            f"holdout detector ASR {entry['holdout']['detectors']['asr']:.1%}"
         )
-        train_rows = load_rows("train", "attacks")
-        train_benign = load_rows("train", "benign")
-        train_attacks = [
-            Attack(row["prompt"], row["family"], "seed", row["id"], tuple(row.get("turns", [])))
-            for row in train_rows
-        ]
-        training_pool = list(train_attacks)
-        for attack in train_attacks:
-            training_pool.extend(mutate(attack))
-        prior = os.environ.get("SENTINELLOOP_RULES_PATH")
-        os.environ["SENTINELLOOP_RULES_PATH"] = str(rules_path)
-        try:
-            train_records, train_summary = run(training_pool, use_firewall=True)
-        finally:
-            if prior is None:
-                os.environ.pop("SENTINELLOOP_RULES_PATH", None)
-            else:
-                os.environ["SENTINELLOOP_RULES_PATH"] = prior
-        dataset, additions = build_training_data(train_records, train_benign, rules)
-        dataset_path = OUT / f"v{version}-training-data.json"
-        dataset_path.write_text(json.dumps(dataset, indent=2), encoding="utf-8")
-        holdout_metrics = evaluate_with_rules(
-            attacks_from("holdout"),
-            [Attack(row["prompt"], "benign") for row in load_rows("holdout", "benign")],
-            rules_path,
+        # Harden: every bypass becomes training data, a known attack and a signature.
+        for attack in found:
+            texts = attacker_texts(_as_row(attack))
+            learned_texts.extend(texts)
+            index_rows.append({**_as_row(attack), "id": f"v{version + 1}-bypass-{len(index_rows)}"})
+            for text in texts:
+                signature = normalize(text).split("\n", 1)[0].strip()
+                if (
+                    len(signature) >= 20
+                    and all(rule["exact"] != signature for rule in rules)
+                    and not any(signature in benign for benign in benign_signatures)
+                ):
+                    rules.append({"exact": signature, "family": attack.family, "version": version + 1})
+        model = train(
+            attack_texts + learned_texts,
+            benign_texts,
+            version=f"v{version + 1}",
+            source=f"train split + {len(learned_texts)} bypass texts found on the train split",
         )
-        reports.append(
-            {
-                "version": version,
-                "training": train_summary,
-                "training_breaches": sum(row["outcome"] == "breach" for row in train_records),
-                "hardening_rules_added": len(additions),
-                "training_data": str(dataset_path.relative_to(ROOT)),
-                "holdout": holdout_metrics,
-            }
-        )
-        rules.extend(additions)
-    baseline = run(attacks_from("holdout"), use_firewall=False)[1]
-    baseline_count = sum(item["attempts"] for item in baseline.values())
-    baseline_breaches = sum(item["breaches"] for item in baseline.values())
+        model["threshold"] = choose_threshold(model)
+        model["similarity_threshold"] = choose_similarity_threshold(index_rows)
+        model["data"] = {**data_report, "bypass_texts": len(learned_texts)}
+        write_version(OUT / f"v{version + 1}", model, index_rows, rules)
+
     result = {
-        "rounds": reports,
-        "baseline_holdout": baseline,
-        "baseline_holdout_overall": {
-            "attempts": baseline_count,
-            "breaches": baseline_breaches,
-            "asr": baseline_breaches / baseline_count if baseline_count else 0.0,
-        },
+        "method": (
+            "Each round attacks training seeds (all mutation operators + genetic search) against "
+            "the detector layers, then retrains the classifier, extends the similarity index and "
+            "adds exact signatures from the bypasses. Validation tunes thresholds; the locked "
+            "holdout is never used for training."
+        ),
         "holdout_lock_verified": True,
-        "method": "exact normalized attack-text signatures; benign training prompts are checked as counterexamples",
+        "rounds": reports,
     }
-    (OUT / "report.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    (OUT / "report.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
+    if promote:
+        final = OUT / f"v{rounds}"
+        shutil.copyfile(final / "model.json", MODELS / "injection_classifier.json")
+        shutil.copyfile(final / "attack_index.json", MODELS / "attack_index.json")
+        print(f"Promoted v{rounds} model and attack index to {MODELS}")
     return result
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--rounds", type=int, default=3)
+    parser.add_argument(
+        "--promote", action="store_true", help="Install the final version into firewall/models"
+    )
     args = parser.parse_args()
-    result = run_rounds(args.rounds)
-    print("round  train-breaches  new-rules  holdout-ASR  holdout-FPR")
+    result = run_rounds(args.rounds, args.promote)
+    print("version  train-bypasses  holdout ASR (detectors)  holdout ASR (full)  holdout FPR")
     for row in result["rounds"]:
         holdout = row["holdout"]
+        found = row.get("training_attack", {}).get("breaches", "-")
         print(
-            f"v{row['version']:<5} {row['training_breaches']:>14}  {row['hardening_rules_added']:>9}  "
-            f"{holdout['asr']:.1%}        {holdout['fpr']:.1%}"
+            f"{row['version']:<8} {found!s:>14}  {holdout['detectors']['asr']:>22.1%}  "
+            f"{holdout['full']['asr']:>18.1%}  {holdout['benign']['fpr']:>10.1%}"
         )
-    print("Wrote artifacts/closed_loop/report.json")
+    print(f"Wrote {OUT / 'report.json'}")
 
 
 if __name__ == "__main__":
