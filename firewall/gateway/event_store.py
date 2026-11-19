@@ -1,4 +1,6 @@
-"""Small SQLite/PostgreSQL event and fuzzer-attempt store."""
+"""Small SQLite/PostgreSQL store for firewall decisions and fuzzer attempts."""
+
+from __future__ import annotations
 
 import json
 import os
@@ -10,12 +12,23 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+DEFAULT_SQLITE = Path(__file__).resolve().parents[2] / "artifacts" / "sentinelloop.db"
+EVENT_FIELDS = (
+    "request_id",
+    "layer",
+    "verdict",
+    "score",
+    "latency_ms",
+    "reason",
+    "stage",
+    "source",
+    "excerpt",
+)
+
 
 class EventStore:
     def __init__(self, dsn: str | None = None) -> None:
-        self.dsn = dsn or os.getenv(
-            "SENTINELLOOP_DATABASE_URL", "sqlite:///artifacts/sentinelloop.db"
-        )
+        self.dsn = dsn or os.getenv("SENTINELLOOP_DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE.as_posix()}")
         if self.dsn.startswith("sqlite:///"):
             self.backend = "sqlite"
             self.sqlite_path = Path(self.dsn[len("sqlite:///") :])
@@ -26,9 +39,7 @@ class EventStore:
                 import psycopg
                 from psycopg.rows import dict_row
             except ImportError as error:
-                raise RuntimeError(
-                    "PostgreSQL storage needs the optional .[storage] dependency"
-                ) from error
+                raise RuntimeError("PostgreSQL storage needs the optional .[storage] dependency") from error
             self._psycopg = psycopg
             self._dict_row = dict_row
         else:
@@ -53,56 +64,38 @@ class EventStore:
 
     def _initialize(self) -> None:
         if self.backend == "sqlite":
-            schema = """
-                CREATE TABLE IF NOT EXISTS firewall_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT, request_id TEXT, layer TEXT NOT NULL,
-                    verdict TEXT NOT NULL, score REAL NOT NULL, latency_ms REAL NOT NULL,
-                    reason TEXT NOT NULL, created_at REAL NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS fuzzer_attempts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, attempt_index INTEGER NOT NULL,
-                    family TEXT NOT NULL, outcome TEXT NOT NULL, payload_json TEXT NOT NULL, created_at REAL NOT NULL
-                );
-            """
+            key, real = "INTEGER PRIMARY KEY AUTOINCREMENT", "REAL"
         else:
-            schema = """
-                CREATE TABLE IF NOT EXISTS firewall_events (
-                    id BIGSERIAL PRIMARY KEY, request_id TEXT, layer TEXT NOT NULL,
-                    verdict TEXT NOT NULL, score DOUBLE PRECISION NOT NULL, latency_ms DOUBLE PRECISION NOT NULL,
-                    reason TEXT NOT NULL, created_at DOUBLE PRECISION NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS fuzzer_attempts (
-                    id BIGSERIAL PRIMARY KEY, run_id TEXT NOT NULL, attempt_index INTEGER NOT NULL,
-                    family TEXT NOT NULL, outcome TEXT NOT NULL, payload_json TEXT NOT NULL,
-                    created_at DOUBLE PRECISION NOT NULL
-                );
-            """
+            key, real = "BIGSERIAL PRIMARY KEY", "DOUBLE PRECISION"
+        statements = [
+            f"""CREATE TABLE IF NOT EXISTS firewall_events (
+                id {key}, request_id TEXT, layer TEXT NOT NULL, verdict TEXT NOT NULL,
+                score {real} NOT NULL, latency_ms {real} NOT NULL, reason TEXT NOT NULL,
+                created_at {real} NOT NULL)""",
+            f"""CREATE TABLE IF NOT EXISTS fuzzer_attempts (
+                id {key}, run_id TEXT NOT NULL, attempt_index INTEGER NOT NULL,
+                family TEXT NOT NULL, outcome TEXT NOT NULL, payload_json TEXT NOT NULL,
+                created_at {real} NOT NULL)""",
+        ]
         with self._connection() as connection:
-            if self.backend == "sqlite":
-                connection.executescript(schema)
-            else:
-                for statement in schema.strip().split(";"):
-                    if statement.strip():
-                        connection.execute(statement)
+            for statement in statements:
+                connection.execute(statement)
+        # Columns added in v0.2; older databases are migrated in place.
+        for column in ("stage", "source", "excerpt"):
+            try:
+                with self._connection() as connection:
+                    connection.execute(f"ALTER TABLE firewall_events ADD COLUMN {column} TEXT")
+            except Exception:
+                pass
 
     def append_event(self, event: dict[str, Any]) -> None:
         placeholder = "?" if self.backend == "sqlite" else "%s"
+        columns = (*EVENT_FIELDS, "created_at")
         sql = (
-            "INSERT INTO firewall_events (request_id, layer, verdict, score, latency_ms, reason, created_at) "
-            f"VALUES ({', '.join([placeholder] * 7)})"
+            f"INSERT INTO firewall_events ({', '.join(columns)}) "
+            f"VALUES ({', '.join([placeholder] * len(columns))})"
         )
-        values = tuple(
-            event.get(key)
-            for key in (
-                "request_id",
-                "layer",
-                "verdict",
-                "score",
-                "latency_ms",
-                "reason",
-                "timestamp",
-            )
-        )
+        values = tuple(event.get(name) for name in EVENT_FIELDS) + (event.get("timestamp"),)
         with self._connection() as connection:
             connection.execute(sql, values)
 
@@ -110,21 +103,12 @@ class EventStore:
         placeholder = "?" if self.backend == "sqlite" else "%s"
         with self._connection() as connection:
             rows = connection.execute(
-                f"SELECT request_id, layer, verdict, score, latency_ms, reason, created_at "
-                f"FROM firewall_events ORDER BY id DESC LIMIT {placeholder}",
+                f"SELECT {', '.join(EVENT_FIELDS)}, created_at FROM firewall_events "
+                f"ORDER BY id DESC LIMIT {placeholder}",
                 (max(1, min(limit, 500)),),
             ).fetchall()
         return [
-            {
-                "request_id": row["request_id"],
-                "layer": row["layer"],
-                "verdict": row["verdict"],
-                "score": row["score"],
-                "latency_ms": row["latency_ms"],
-                "reason": row["reason"],
-                "timestamp": row["created_at"],
-            }
-            for row in rows
+            {**{name: row[name] for name in EVENT_FIELDS}, "timestamp": row["created_at"]} for row in rows
         ]
 
     def store_attempts(self, records: list[dict[str, Any]], run_id: str | None = None) -> str:
@@ -136,14 +120,8 @@ class EventStore:
         )
         now = time.time()
         values = [
-            (
-                run_id,
-                int(record["index"]),
-                record["family"],
-                record["outcome"],
-                json.dumps(record, ensure_ascii=False),
-                now,
-            )
+            (run_id, int(record["index"]), record["family"], record["outcome"],
+             json.dumps(record, ensure_ascii=False), now)  # fmt: skip
             for record in records
         ]
         with self._connection() as connection:
