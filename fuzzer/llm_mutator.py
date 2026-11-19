@@ -27,8 +27,7 @@ def parse_mutation(content: str, parent: Attack) -> Attack:
         not isinstance(turns, list)
         or len(turns) > 4
         or any(
-            not isinstance(turn, str) or not turn.strip() or len(turn) > MAX_PROMPT_CHARS
-            for turn in turns
+            not isinstance(turn, str) or not turn.strip() or len(turn) > MAX_PROMPT_CHARS for turn in turns
         )
     ):
         raise ValueError("attacker response has invalid turns")
@@ -45,8 +44,7 @@ def mutate_with_feedback(parent: Attack, feedback: str) -> Attack:
     base_url = os.getenv("SENTINELLOOP_UPSTREAM_URL", "").strip()
     api_key = os.getenv("SENTINELLOOP_API_KEY", "").strip()
     model = (
-        os.getenv("SENTINELLOOP_ATTACKER_MODEL", "").strip()
-        or os.getenv("SENTINELLOOP_MODEL", "").strip()
+        os.getenv("SENTINELLOOP_ATTACKER_MODEL", "").strip() or os.getenv("SENTINELLOOP_MODEL", "").strip()
     )
     if not base_url or not api_key or not model:
         raise RuntimeError(
