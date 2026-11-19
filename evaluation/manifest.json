@@ -1,21 +1,26 @@
 {
-  "seed": "sentinelloop-v1",
+  "seed": "sentinelloop-v2",
+  "ratios": {
+    "train": 0.6,
+    "validation": 0.2,
+    "holdout": 0.2
+  },
   "counts": {
     "train": {
-      "attacks": 12,
-      "benign": 24
+      "attacks": 75,
+      "benign": 36
     },
     "validation": {
-      "attacks": 6,
-      "benign": 3
+      "attacks": 26,
+      "benign": 12
     },
     "holdout": {
-      "attacks": 6,
-      "benign": 3
+      "attacks": 26,
+      "benign": 12
     }
   },
   "locked_holdout_sha256": {
-    "attacks.json": "ce4b662e86a337d55364b35518899b7674e0cb57b58f51f23fde9efab0423e0a",
-    "benign.json": "20816689f3c8cc4db6eac54677869e09c842eac8942a6ed0928e57eef4081d1e"
+    "attacks.json": "8ec575aa578cc9a1d524445e6ee1f7b92f403ae2f4a9a1d2e7a4ab2b157fbd27",
+    "benign.json": "60eedea7c8b7932d867f4798a95f1c26374fe2792ee903e735e2d96a73caf423"
   }
 }
