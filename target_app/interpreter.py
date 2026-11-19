@@ -252,7 +252,7 @@ SLANG = {
     "passwd": "password", "pass": "password", "creds": "credentials", "cfg": "configuration",
     "config": "configuration", "tho": "though", "abt": "about", "w/": "with", "ty": "thank you",
     "gimme": "give me", "lemme": "let me", "wanna": "want to", "rn": "right now", "plzz": "please", "whats": "what is",
-    "tmrw": "tomorrow", "tmr": "tomorrow", "2day": "today", "4": "for", "bc": "because",
+    "tmrw": "tomorrow", "tmr": "tomorrow", "2day": "today", "bc": "because",
 }  # fmt: skip
 KEYWORDS = (
     "ignore", "disregard", "previous", "instructions", "system", "prompt", "reveal", "secret",
