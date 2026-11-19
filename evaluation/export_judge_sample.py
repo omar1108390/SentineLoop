@@ -32,7 +32,7 @@ def choose_sample(records: list[dict], count: int, seed: int) -> list[dict]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", type=Path, default=Path("artifacts/baseline.json"))
+    parser.add_argument("--input", type=Path, default=Path("artifacts/fuzz/none.json"))
     parser.add_argument("--output", type=Path, default=Path("artifacts/judge-labels.csv"))
     parser.add_argument("--count", type=int, default=120)
     parser.add_argument("--seed", type=int, default=2026)
@@ -44,8 +44,17 @@ def main() -> None:
     if len(rows) < 100:
         raise SystemExit(f"Only {len(rows)} attempts are available; run the baseline fuzzer first")
     fields = (
-        "sample_id", "family", "technique", "prompt", "turns", "response", "tool_calls",
-        "state_changed", "human_label", "annotator", "notes",
+        "sample_id",
+        "family",
+        "technique",
+        "channel",
+        "prompt",
+        "turns",
+        "response",
+        "tool_calls",
+        "human_label",
+        "annotator",
+        "notes",
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="", encoding="utf-8-sig") as stream:
@@ -54,14 +63,14 @@ def main() -> None:
         for row in rows:
             writer.writerow(
                 {
-                    "sample_id": f"baseline-{row['index']}",
+                    "sample_id": f"none-{row['index']}",
                     "family": row["family"],
                     "technique": row["technique"],
+                    "channel": row.get("channel", "direct"),
                     "prompt": row["prompt"],
                     "turns": row["turns"],
                     "response": row.get("response", ""),
                     "tool_calls": row.get("tool_calls", "[]"),
-                    "state_changed": row.get("state_changed", "false"),
                     "human_label": "",
                     "annotator": "",
                     "notes": "",

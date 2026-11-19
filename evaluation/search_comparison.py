@@ -1,42 +1,45 @@
-"""Descriptively compare archived GA and MAP-Elites candidates."""
+"""Compare what the genetic algorithm and MAP-Elites found (descriptive only).
+
+python -m evaluation.search_comparison
+"""
 
 import json
 from pathlib import Path
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"
+from .common import write
+
+SEARCH = Path(__file__).resolve().parents[1] / "artifacts" / "search"
 
 
-def summarize(path: str) -> dict:
-    data = json.loads((ARTIFACTS / path).read_text(encoding="utf-8"))
+def summarize(path: Path) -> dict | None:
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
     archive = data.get("archive", [])
-    cells = {(row.get("family"), row.get("technique")) for row in archive}
+    breaches = [row for row in archive if row.get("fitness", 0) >= 1]
     return {
+        "evaluations": data.get("evaluations"),
         "archive_size": len(archive),
-        "successful_candidates": sum(row.get("outcome") == "breach" for row in archive),
-        "unique_families": len({row.get("family") for row in archive}),
-        "unique_techniques": len({row.get("technique") for row in archive}),
-        "family_technique_cells": len(cells),
-        "search_steps": len(data.get("history", [])),
+        "breach_candidates": len(breaches),
+        "breach_families": sorted({row.get("family") for row in breaches}),
+        "breach_cells": len({(row.get("family"), row.get("technique")) for row in breaches}),
         "seed": data.get("seed"),
     }
 
 
 def main() -> None:
-    output = {
-        "scope": "descriptive archived-candidate comparison; stored runs used different search budgets",
-        "baseline": {
-            "genetic": summarize("genetic-baseline.json"),
-            "map_elites": summarize("map-elites-baseline.json"),
-        },
-        "firewall": {
-            "genetic": summarize("genetic-firewall.json"),
-            "map_elites": summarize("map-elites-firewall.json"),
+    result = {
+        "scope": "descriptive; the two algorithms ran with different evaluation budgets",
+        "profiles": {
+            profile: {
+                "genetic": summarize(SEARCH / f"genetic-{profile}.json"),
+                "map_elites": summarize(SEARCH / f"map-elites-{profile}.json"),
+            }
+            for profile in ("none", "detectors", "full")
         },
     }
-    target = ARTIFACTS / "search-comparison.json"
-    target.write_text(json.dumps(output, indent=2), encoding="utf-8")
-    print(json.dumps(output, indent=2))
-    print(f"Wrote {target}")
+    print(json.dumps(result, indent=1))
+    print(f"Wrote {write('search.json', result)}")
 
 
 if __name__ == "__main__":

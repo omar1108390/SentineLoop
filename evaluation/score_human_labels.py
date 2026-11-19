@@ -11,11 +11,11 @@ LABELS = ("blocked", "allowed-harmless", "breach")
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--labels", type=Path, required=True)
-    parser.add_argument("--attempts", type=Path, default=Path("artifacts/baseline.json"))
-    parser.add_argument("--output", type=Path, default=Path("artifacts/judge-accuracy.json"))
+    parser.add_argument("--attempts", type=Path, default=Path("artifacts/fuzz/none.json"))
+    parser.add_argument("--output", type=Path, default=Path("artifacts/evaluation/judge-accuracy.json"))
     args = parser.parse_args()
     attempts = json.loads(args.attempts.read_text(encoding="utf-8"))["attempts"]
-    answer_key = {f"baseline-{row['index']}": row["outcome"] for row in attempts}
+    answer_key = {f"none-{row['index']}": row["outcome"] for row in attempts}
     with args.labels.open(newline="", encoding="utf-8-sig") as stream:
         rows = list(csv.DictReader(stream))
     labeled = [row for row in rows if row.get("human_label", "").strip()]

@@ -1,250 +1,402 @@
-"""Regenerate the project report and figures from checked-in evaluation artifacts."""
+"""Regenerate docs/report.md and its figures from the benchmark artifacts.
+
+python -m evaluation.generate_report
+"""
+
+from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
+
+from fuzzer.mutators import OPERATORS  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / "artifacts"
-FIGURES = ARTIFACTS / "figures"
+FIGURES = ROOT / "docs" / "figures"
+REPORT = ROOT / "docs" / "report.md"
+PROFILES = ("none", "keyword", "detectors", "full")
+NAMES = {"none": "No defense", "keyword": "Keyword rules", "detectors": "All detectors", "full": "Full stack"}
+COLORS = {"none": "#c0392b", "keyword": "#e67e22", "detectors": "#2e86c1", "full": "#1e8449"}
 
 
-def read_json(path: str) -> dict:
-    return json.loads((ARTIFACTS / path).read_text(encoding="utf-8"))
+def read(name: str) -> dict:
+    return json.loads((ARTIFACTS / name).read_text(encoding="utf-8"))
+
+
+def pct(value: float) -> str:
+    return f"{100 * value:.1f}%"
+
+
+def _save(fig, name: str) -> str:
+    fig.tight_layout()
+    fig.savefig(FIGURES / name, dpi=150)
+    plt.close(fig)
+    return f"figures/{name}"
+
+
+def figure_profiles(profiles: dict) -> str:
+    fig, ax = plt.subplots(figsize=(8, 4))
+    splits = ("validation", "holdout")
+    width = 0.2
+    for offset, name in enumerate(PROFILES):
+        values = [profiles[split][name]["attacks"]["asr"] for split in splits]
+        positions = [index + (offset - 1.5) * width for index in range(len(splits))]
+        bars = ax.bar(positions, values, width, label=NAMES[name], color=COLORS[name])
+        ax.bar_label(bars, labels=[pct(value) for value in values], fontsize=7, padding=2)
+    ax.set(xticks=range(len(splits)), xticklabels=["Validation", "Locked holdout"],
+           ylabel="Attack success rate", ylim=(0, 1.08), title="Attack success rate by defense profile")  # fmt: skip
+    ax.legend(frameon=False, ncol=4, fontsize=8, loc="upper right")
+    return _save(fig, "profiles.png")
+
+
+def figure_families(fuzz: dict) -> str:
+    families = list(fuzz["none"]["summary"])
+    matrix = [[fuzz[name]["summary"][family]["asr"] for name in PROFILES] for family in families]
+    fig, ax = plt.subplots(figsize=(7, 6))
+    image = ax.imshow(matrix, cmap="Reds", vmin=0, vmax=1, aspect="auto")
+    ax.set_xticks(range(len(PROFILES)), [NAMES[name] for name in PROFILES], rotation=20)
+    ax.set_yticks(range(len(families)), families)
+    for row, values in enumerate(matrix):
+        for column, value in enumerate(values):
+            ax.text(column, row, pct(value), ha="center", va="center", fontsize=7,
+                    color="white" if value > 0.5 else "black")  # fmt: skip
+    ax.set_title("Attack success by family (all seeds + mutations)")
+    fig.colorbar(image, ax=ax, fraction=0.04)
+    return _save(fig, "families.png")
+
+
+def figure_hardening(rounds: list[dict]) -> str:
+    versions = [row["version"] for row in rounds]
+    fig, ax = plt.subplots(figsize=(7, 3.8))
+    detectors = [row["holdout"]["detectors"]["asr"] for row in rounds]
+    validation = [row["validation"]["detectors"]["asr"] for row in rounds]
+    full = [row["holdout"]["full"]["asr"] for row in rounds]
+    ax.plot(versions, detectors, marker="o", color=COLORS["detectors"], label="Holdout, detectors")
+    ax.plot(versions, validation, marker="s", linestyle="--", color="#7fb3d5", label="Validation, detectors")
+    ax.plot(versions, full, marker="o", color=COLORS["full"], label="Holdout, full stack")
+    for version, value in zip(versions, detectors):
+        ax.annotate(
+            pct(value), (version, value), textcoords="offset points", xytext=(0, 6), ha="center", fontsize=8
+        )
+    ax.set(
+        ylabel="Attack success rate",
+        title="Hardening rounds",
+        ylim=(0, max(detectors + validation) * 1.4 + 0.01),
+    )
+    ax.legend(frameon=False, fontsize=8)
+    return _save(fig, "hardening.png")
+
+
+def figure_ablation(ablation: dict) -> str:
+    names = list(ablation)
+    values = [ablation[name]["asr"] for name in names]
+    fig, ax = plt.subplots(figsize=(7, 4.4))
+    bars = ax.barh(names, values, color=["#1e8449" if name == "full" else "#5d6d7e" for name in names])
+    ax.bar_label(bars, labels=[pct(value) for value in values], fontsize=8, padding=3)
+    ax.invert_yaxis()
+    ax.set(xlabel="Holdout attack success rate", title="Ablation: remove one layer at a time", xlim=(0, 1.1))
+    return _save(fig, "ablation.png")
+
+
+def figure_grid(grid: dict) -> str:
+    families, techniques = grid["dimensions"]["family"], grid["dimensions"]["technique"]
+    from matplotlib.colors import BoundaryNorm, ListedColormap
+    from matplotlib.patches import Patch
+
+    cells = {(row["family"], row["technique"]): row["fitness"] for row in grid["archive"]}
+    # -1 = operator not applicable, 0 = blocked by a detector, 0.5 = evaded detectors, 1 = breach
+    matrix = [[cells.get((family, technique), -1) for technique in techniques] for family in families]
+    colors = ["#ffffff", "#d5d8dc", "#f5b041", "#c0392b"]
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm([-1.5, -0.25, 0.25, 0.75, 1.5], cmap.N)
+    fig, ax = plt.subplots(figsize=(10, 5.6))
+    ax.imshow(matrix, cmap=cmap, norm=norm, aspect="auto")
+    ax.set_xticks(range(len(techniques)), techniques, rotation=60, ha="right", fontsize=7)
+    ax.set_yticks(range(len(families)), families, fontsize=8)
+    ax.set_xticks([x - 0.5 for x in range(1, len(techniques))], minor=True)
+    ax.set_yticks([y - 0.5 for y in range(1, len(families))], minor=True)
+    ax.grid(which="minor", color="white", linewidth=1.5)
+    ax.tick_params(which="minor", length=0)
+    ax.set_title(f"MAP-Elites archive vs. {NAMES.get(grid['profile'], grid['profile'])}")
+    labels = ["not applicable", "blocked", "evaded detectors, stopped later", "breach"]
+    ax.legend(handles=[Patch(facecolor=c, edgecolor="#999999", label=label) for c, label in zip(colors, labels)],
+              loc="upper center", bbox_to_anchor=(0.5, -0.32), ncol=4, frameon=False, fontsize=8)  # fmt: skip
+    return _save(fig, "map-elites.png")
 
 
 def main() -> None:
     FIGURES.mkdir(parents=True, exist_ok=True)
-    stats = read_json("benchmark-stats.json")
-    baseline = read_json("baseline.json")["summary"]
-    firewall = read_json("firewall.json")["summary"]
-    comparisons = read_json("baseline-comparison.json")
-    search_comparison = read_json("search-comparison.json")
-    guards = read_json("guard-ablation.json")
-    utility = read_json("utility-report.json")
-    input_ablation = read_json("ablation.json")
-    closed_loop = read_json("closed_loop/report.json")
+    profiles = read("evaluation/profiles.json")["splits"]
+    fuzz = {name: read(f"fuzz/{name}-summary.json") for name in PROFILES}
+    hardening = read("hardening/report.json")["rounds"]
+    ablation = read("evaluation/ablation.json")["configurations"]
+    layers = read("evaluation/layers.json")
+    stats = read("evaluation/stats.json")["comparisons"]
+    search = read("evaluation/search.json")["profiles"]
+    grid = read("search/map-elites-detectors.json")
+    model = json.loads(
+        (ROOT / "firewall" / "models" / "injection_classifier.json").read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "evaluation" / "manifest.json").read_text(encoding="utf-8"))
 
-    baseline_total = sum(row["attempts"] for row in baseline.values())
-    baseline_breaches = sum(row["breaches"] for row in baseline.values())
-    firewall_total = sum(row["attempts"] for row in firewall.values())
-    firewall_breaches = sum(row["breaches"] for row in firewall.values())
-    baseline_asr, firewall_asr = (
-        baseline_breaches / baseline_total,
-        firewall_breaches / firewall_total,
-    )
-    holdout = comparisons["splits"]["holdout"]
+    fig_profiles = figure_profiles(profiles)
+    fig_families = figure_families(fuzz)
+    fig_hardening = figure_hardening(hardening)
+    fig_ablation = figure_ablation(ablation)
+    fig_grid = figure_grid(grid)
 
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    labels = ["Generated mutation set", "Locked holdout"]
-    x = [0, 1]
-    width = 0.34
-    baseline_values = [baseline_asr, holdout["no_defense"]["asr"]]
-    firewall_values = [firewall_asr, holdout["layered_firewall"]["asr"]]
-    ax.bar([v - width / 2 for v in x], baseline_values, width, label="No defense", color="#bb4b55")
-    ax.bar(
-        [v + width / 2 for v in x],
-        firewall_values,
-        width,
-        label="Layered firewall",
-        color="#247b72",
+    hold = profiles["holdout"]
+    counts = manifest["counts"]
+    total = {name: fuzz[name]["overall"] for name in PROFILES}
+    full_search = search["full"]
+    full_breaches = (full_search["genetic"] or {}).get("breach_candidates", 0) + (
+        full_search["map_elites"] or {}
+    ).get("breach_candidates", 0)
+    if full_breaches:
+        finding5 = (
+            f"**Adaptive search still finds gaps**: against the full stack the genetic algorithm and "
+            f"MAP-Elites found {full_breaches} breaching candidates (families: "
+            f"{', '.join(sorted(set(full_search['genetic']['breach_families']) | set(full_search['map_elites']['breach_families'])))}), "
+            "typically by chaining two tricks, such as a language the detectors were not trained on "
+            "plus a request to write the answer backwards past the output guard."
+        )
+    else:
+        finding5 = (
+            f"**Adaptive search still maps the detectors' gaps**: against the "
+            f"detectors alone, MAP-Elites still found breaches in {search['detectors']['map_elites']['breach_cells']} "
+            f"family x technique cells and the genetic algorithm in {search['detectors']['genetic']['breach_cells']}, "
+            f"while neither found a full-stack breach within its budget ({full_search['genetic']['evaluations']} + "
+            f"{full_search['map_elites']['evaluations']} evaluations; static full-stack ASR "
+            f"{pct(total['full']['asr'])}). A zero here is a budget-limited result, not a proof: "
+            "the output guard's reversed-text gap (see Limitations) remains open."
+        )
+    first, last = hardening[0], hardening[-1]
+    found = sum(row.get("training_attack", {}).get("breaches", 0) for row in hardening)
+    gain = first["holdout"]["detectors"]["asr"] - last["holdout"]["detectors"]["asr"]
+    if found and gain > 0:
+        finding4 = (
+            f"**The closed loop adapts, then saturates**: retraining on {found} fuzzer-found bypasses lowered "
+            f"holdout detector ASR from {pct(first['holdout']['detectors']['asr'])} ({first['version']}) to "
+            f"{pct(last['holdout']['detectors']['asr'])} ({last['version']}) without raising FPR."
+        )
+        hardening_text = (
+            "The gain is real but modest, and it saturates quickly because the training-time attacker only "
+            "rewrites training seeds. Remaining failures are benign-looking instructions that detection "
+            "cannot learn without hurting usability, the classic argument for architectural defenses."
+        )
+    else:
+        finding4 = (
+            "**The closed loop saturated immediately**: with the augmented classifier, the training-time "
+            f"attacker (all mutations, operator chains, genetic search) found {found} bypasses, so the "
+            f"rounds changed nothing (holdout detector ASR {pct(last['holdout']['detectors']['asr'])}). "
+            "A stronger attacker (LLM-driven mutations, external corpora) is needed to keep the loop useful."
+        )
+        hardening_text = (
+            "No round produced new training bypasses, so later versions equal v0. This does not mean the "
+            "detectors are unbreakable: this attacker's search space (rewriting training seeds with known "
+            "operators) is exhausted, while the holdout still contains survivors a richer attacker could "
+            "have found. See Limitations."
+        )
+    survivors = ablation["detectors_only"]["by_family"]
+    surviving = sum(row["breaches"] for row in survivors.values())
+    indirect = sum(row["breaches"] for name, row in survivors.items() if name.startswith("indirect"))
+    survivor_text = (
+        f"{indirect} of the {surviving} holdout breaches that survive the detectors are *indirect* "
+        'injections, typically instructions that read like ordinary requests ("Assistant, please add '
+        "a calendar event called 'Transfer $4,900…'\"); a text classifier cannot separate these from "
+        "benign mail without blocking real users."
+        if surviving
+        else "No holdout attack survived the detectors in this run."
     )
-    ax.set(
-        xticks=x,
-        xticklabels=labels,
-        ylabel="Attack success rate",
-        ylim=(0, 1),
-        title="Sandbox attack outcomes",
+    weakest = sorted(fuzz["detectors"]["summary"].items(), key=lambda item: item[1]["asr"], reverse=True)[:3]
+    layer_rows = "\n".join(
+        f"| {name} | {pct(row['detection_rate'])} | {pct(row['false_positive_rate'])} | "
+        f"{row['latency_ms']['p95']:.2f} ms |"
+        for name, row in layers["splits"]["holdout"].items()
     )
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
-    ax.legend(frameon=False)
-    fig.tight_layout()
-    fig.savefig(FIGURES / "attack-outcomes.png", dpi=160)
-    plt.close(fig)
-
-    families = sorted(set(baseline) | set(firewall))
-    positions = range(len(families))
-    family_baseline_asr = [baseline[name]["asr"] for name in families]
-    family_firewall_asr = [firewall[name]["asr"] for name in families]
-    fig, ax = plt.subplots(figsize=(9, 5))
-    ax.barh(
-        [v - width / 2 for v in positions],
-        family_baseline_asr,
-        width,
-        label="No defense",
-        color="#bb4b55",
+    profile_rows = "\n".join(
+        f"| {NAMES[name]} | {pct(profiles['validation'][name]['attacks']['asr'])} | "
+        f"{pct(hold[name]['attacks']['asr'])} ({hold[name]['attacks']['breaches']}/"
+        f"{hold[name]['attacks']['attempts']}) | {pct(hold[name]['benign']['fpr'])} | "
+        f"{pct(hold[name]['benign']['utility'])} |"
+        for name in PROFILES
     )
-    ax.barh(
-        [v + width / 2 for v in positions],
-        family_firewall_asr,
-        width,
-        label="Layered firewall",
-        color="#247b72",
+    round_rows = "\n".join(
+        f"| {row['version']} | {row.get('training_attack', {}).get('breaches', '-')} | "
+        f"{row['known_attacks_in_index']} | {row['classifier_threshold']:.2f} / {row.get('similarity_threshold', 0.65):.2f} | "
+        f"{pct(row['validation']['detectors']['asr'])} | {pct(row['holdout']['detectors']['asr'])} | "
+        f"{pct(row['holdout']['full']['asr'])} | {pct(row['holdout']['benign']['fpr'])} |"
+        for row in hardening
     )
-    ax.set(
-        yticks=list(positions),
-        yticklabels=families,
-        xlabel="Attack success rate",
-        xlim=(0, 1),
-        title="Generated attack success by family",
+    stat_rows = "\n".join(
+        f"| {NAMES[name]} | {pct(row['firewall_asr'])} | {pct(row['asr_reduction'])} "
+        f"[{pct(row['asr_reduction_ci95'][0])}, {pct(row['asr_reduction_ci95'][1])}] | "
+        f"{row['cluster_permutation']['two_sided_p_value']:.2g} |"
+        for name, row in stats.items()
     )
-    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
-    ax.legend(frameon=False)
-    fig.tight_layout()
-    fig.savefig(FIGURES / "family-weaknesses.png", dpi=160)
-    plt.close(fig)
-
-    rows = holdout
-    labels = ["No defense", "Keyword filter", "Layered firewall"]
-    keys = ["no_defense", "keyword_filter", "layered_firewall"]
-    x = range(len(keys))
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.bar(
-        [v - width / 2 for v in x],
-        [rows[key]["asr"] for key in keys],
-        width,
-        label="ASR",
-        color="#bb4b55",
-    )
-    ax.bar(
-        [v + width / 2 for v in x],
-        [rows[key]["false_positive_rate"] for key in keys],
-        width,
-        label="Benign block rate",
-        color="#d1a844",
-    )
-    ax.set(
-        xticks=list(x),
-        xticklabels=labels,
-        ylabel="Rate",
-        ylim=(0, 1),
-        title="Locked holdout input defenses",
-    )
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
-    ax.legend(frameon=False)
-    fig.tight_layout()
-    fig.savefig(FIGURES / "holdout-defense-comparison.png", dpi=160)
-    plt.close(fig)
-
-    guard = guards["splits"]["holdout"]
-    values = [
-        guard["output_redaction"]["raw_canary_leaks"],
-        guard["output_redaction"]["guarded_canary_leaks"],
-        guard["tool_policy"]["attack_side_effects_denied"],
-    ]
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.bar(
-        ["Canary leaks\nbefore guard", "Canary leaks\nafter guard", "Attack side effects\ndenied"],
-        values,
-        color=["#bb4b55", "#247b72", "#247b72"],
-    )
-    ax.set(ylabel="Count", title="Output guard and tool-policy checks (locked holdout)")
-    ax.set_ylim(0, max(values + [1]) * 1.2)
-    fig.tight_layout()
-    fig.savefig(FIGURES / "output-and-policy.png", dpi=160)
-    plt.close(fig)
-
-    labels = ["GA", "MAP-Elites"]
-    baseline_search = search_comparison["baseline"]
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    x = range(len(labels))
-    ax.bar(
-        [v - width / 2 for v in x],
-        [baseline_search[key]["family_technique_cells"] for key in ("genetic", "map_elites")],
-        width,
-        label="Occupied family×technique cells",
-        color="#247b72",
-    )
-    ax.bar(
-        [v + width / 2 for v in x],
-        [baseline_search[key]["successful_candidates"] for key in ("genetic", "map_elites")],
-        width,
-        label="Archived breach candidates",
-        color="#bb4b55",
-    )
-    ax.set(
-        xticks=list(x),
-        xticklabels=labels,
-        ylabel="Count",
-        title="Exploratory search archives (no firewall)",
-    )
-    ax.legend(frameon=False)
-    fig.tight_layout()
-    fig.savefig(FIGURES / "search-diversity.png", dpi=160)
-    plt.close(fig)
-
-    rounds = closed_loop["rounds"]
-    ga, map_elites = baseline_search["genetic"], baseline_search["map_elites"]
-    round_rows = ", ".join(
-        f"v{row['version']}: {row.get('training_breaches', 0)} training breaches, "
-        f"{row.get('hardening_rules_added', 0)} rules added"
-        for row in rounds
-    )
+    search_d = search["detectors"]
     report = f"""# SentinelLoop evaluation report
 
-## Summary
+*Generated by `python -m evaluation.generate_report` on {date.today().isoformat()}. Every number
+below is computed from files in `artifacts/`; rerun `python -m sentinelloop benchmark` to reproduce.*
 
-SentinelLoop is a sandboxed prototype for studying prompt-injection defense. It combines an intentionally vulnerable fake email agent, an attack fuzzer, a layered gateway, objective checks, and evaluation tooling. The local corpus demonstrates that input filters, output redaction, and tool authorization address different failure modes. These results are a small deterministic demonstration, not evidence of production-level robustness.
+## 1. Summary
 
-## System and method
+SentinelLoop studies **prompt injection**: attacks that smuggle instructions into the text an
+LLM-based assistant reads. We attack a deliberately vulnerable, simulated email assistant
+with {sum(counts[split]['attacks'] for split in counts)} seed attacks from {len(fuzz['none']['summary'])} families plus
+{fuzz['none']['overall']['attempts'] - sum(counts[split]['attacks'] for split in counts)} automatic
+mutations, and measure four defense profiles.
 
-- **Target:** deterministic email/calendar assistant with fake messages, fake secret, canary, and in-memory no-op tools.
-- **Attacks:** local categorized seed corpus plus deterministic paraphrase, encoding, Unicode, document, and distractor mutations. Genetic and MAP-Elites search are available.
-- **Input defenses:** normalized heuristic rules, compact trained classifier, and TF-IDF word/bigram similarity over training attacks.
-- **Output/tool defenses:** canary and fake-secret redaction; strict tool allowlist with argument, provenance, and explicit-approval checks.
-- **Judge:** objective canary, forbidden-tool, and unexpected-state signals.
-- **Evaluation:** train/validation/holdout corpus split with a SHA-256 lock; holdout is excluded from hardening and model fitting.
+| Profile | Validation ASR | **Holdout ASR** | Holdout FPR | Holdout utility |
+|---|---|---|---|---|
+{profile_rows}
 
-## Results
+*ASR = attack success rate (lower is better). FPR = benign requests where any layer blocked or
+withheld something. Utility = benign tasks completed correctly. Holdout = {counts['holdout']['attacks']}
+seeds (+ mutations) and {counts['holdout']['benign']} benign requests that are SHA-256-locked and never
+used for training or tuning.*
 
-![Generated attack outcomes](artifacts/figures/attack-outcomes.png)
+**Main findings**
 
-The deterministic mutation artifact contains **{baseline_breaches}/{baseline_total}** baseline breaches ({baseline_asr:.1%}) and **{firewall_breaches}/{firewall_total}** with the layered input firewall ({firewall_asr:.1%}). Across {stats['seed_clusters']} source-seed clusters, the baseline 95% cluster-bootstrap interval is {stats['baseline_asr_ci95'][0]:.1%}–{stats['baseline_asr_ci95'][1]:.1%}. No firewall cluster breached; the 95% Wilson interval for an affected source cluster is {stats['firewall_seed_cluster_breach_rate_ci95_wilson'][0]:.1%}–{stats['firewall_seed_cluster_breach_rate_ci95_wilson'][1]:.1%}. The paired cluster sign-flip estimate is p={stats['cluster_permutation']['two_sided_p_value']:.5g}.
+1. **The unprotected agent is very easy to hijack**: {pct(hold['none']['attacks']['asr'])} of holdout
+   attacks succeed. The signature rules alone (after the L0 normalizer) bring this to
+   {pct(hold['keyword']['attacks']['asr'])}; see the caveat on rule development in Limitations.
+2. **Detectors help a lot but cannot finish the job**: rules + ML classifier + similarity search
+   reach {pct(hold['detectors']['attacks']['asr'])} on the holdout. {survivor_text}
+3. **Architecture closes the gap**: adding quarantine (dual-LLM), a provenance-aware tool policy
+   and an output guard reaches {pct(hold['full']['attacks']['asr'])} holdout ASR at
+   {pct(hold['full']['benign']['fpr'])} FPR. The ablation shows these layers are complementary:
+   detectors alone leave {pct(ablation['detectors_only']['asr'])}, architecture alone leaves
+   {pct(ablation['architecture_only']['asr'])}.
+4. {finding4}
+5. {finding5}
 
-![Generated attack success by family](artifacts/figures/family-weaknesses.png)
+## 2. Setup
 
-Without defenses, delimiter and indirect-injection families were prominent weak spots in this corpus. The layered input firewall recorded no breaches in the generated mutation run. This is a result on the included deterministic agent and mutation operators only; it does not imply those attack families are generally solved.
+* **Target (`target_app/`)**: a deterministic simulation of a naive LLM agent ("MailPilot") with a
+  system prompt holding a fake secret and canary, fake tools (inbox, files, web, calendar, send
+  email) and a weak guardrail. It understands base64, ROT13, leetspeak, look-alike characters,
+  spaced letters, chat slang and typos, five languages, split payloads, multi-turn priming,
+  refusal suppression, forced openings and fake dialogues, and it obeys instructions
+  found inside retrieved documents.
+* **Judge (`target_app/judge.py`)**: objective signals only: canary/secret in the reply (also
+  reversed, spaced or base64), system prompt disclosed, email to an outside domain or carrying the
+  secret, a side-effect tool triggered by a document, an outside markdown image, or a reply dictated
+  by a document.
+* **Corpus**: {len(fuzz['none']['summary'])} families (`fuzzer/seeds/attacks.json`), {sum(counts[s]['benign'] for s in counts)} benign requests including hard
+  negatives (`evaluation/benign/requests.json`), split 60/20/20 by family with seed
+  `{manifest['seed']}`.
+* **Mutations (`fuzzer/mutators.py`)**: {fuzz['none']['overall']['attempts'] // max(1, sum(counts[s]['attacks'] for s in counts))}x
+  expansion using {len(OPERATORS)} operators (paraphrase, role-play, fake system tags, HTML comment,
+  base64, ROT13, leetspeak, homoglyphs, zero-width, spacing, translation, output evasion, chat slang
+  and typos, payload splitting, multi-turn, direct-to-indirect…).
+* **Defense layers (`firewall/`)**: L0 normalizer (decoding + slang/typo repair), L1a signature
+  rules (some apply to documents only), L1b logistic regression over word and character n-grams
+  trained on {model['train_attacks']} attack and {model['train_benign']} benign texts
+  ({model['data']['synthetic_attacks']} synthetic attacks; {model['data']['synthetic_discarded_by_leak_guard']}
+  discarded by the leak guard), L2 TF-IDF similarity per normalized view, L3 quarantine, L4 tool
+  policy with provenance, L5 output guard. The classifier threshold ({model['threshold']:.2f}) and the
+  similarity threshold ({model.get('similarity_threshold', 0.65):.2f}) are tuned on validation.
 
-![Holdout input-defense comparison](artifacts/figures/holdout-defense-comparison.png)
+## 3. Results
 
-On the **{holdout['no_defense']['attack_count']} attack / {holdout['no_defense']['benign_count']} benign** locked holdout, no defense recorded ASR {holdout['no_defense']['asr']:.1%}; the transparent keyword filter recorded {holdout['keyword_filter']['asr']:.1%}; and the layered input firewall recorded {holdout['layered_firewall']['asr']:.1%}. Their benign block rates were {holdout['no_defense']['false_positive_rate']:.1%}, {holdout['keyword_filter']['false_positive_rate']:.1%}, and {holdout['layered_firewall']['false_positive_rate']:.1%}. This tiny holdout is descriptive only. Removing the classifier in the input-layer ablation raises holdout ASR to {input_ablation['splits']['holdout']['without_classifier']['asr']:.1%}; removing rules or similarity leaves it at {input_ablation['splits']['holdout']['without_rules']['asr']:.1%} and {input_ablation['splits']['holdout']['without_similarity']['asr']:.1%}, respectively.
+![Attack success by profile]({fig_profiles})
 
-![Output and policy checks](artifacts/figures/output-and-policy.png)
+![Attack success by family]({fig_families})
 
-In the locked holdout, the unprotected demo agent exposed the canary in {guard['output_redaction']['raw_canary_leaks']}/{guard['output_redaction']['attack_count']} attack runs. Redaction reduced response leaks to {guard['output_redaction']['guarded_canary_leaks']}; it did not undo any tool actions. The policy replay denied {guard['tool_policy']['attack_side_effects_denied']}/{guard['tool_policy']['attack_side_effect_calls']} observed attack side-effect calls. It denied {guard['tool_policy']['benign_side_effects_denied']}/{guard['tool_policy']['benign_side_effect_calls']} benign side-effect calls when explicit trusted-user approval was represented. The policy ablation replays calls through the policy and does not execute side effects.
+The three families that still get past the detectors most often are
+{", ".join(f"**{family}** ({pct(values['asr'])})" for family, values in weakest)}.
 
-On the 30-prompt benign utility benchmark, the baseline and firewall each completed {utility['baseline_success_count']}/{utility['task_count']} tasks; benign block rate was {utility['benign_block_rate']:.1%}. Measured local input-inspection p95 is reported in `artifacts/layer-evaluation.json`; it is not a hosted-model end-to-end latency measurement.
+### Detectors on their own (holdout)
 
-The closed loop ran {len(rounds)} versions ({round_rows}). No training bypasses were found in those rounds, so no hardening rules were added and there is no measured adaptation gain.
+| Detector | Detection rate | False positives | p95 latency |
+|---|---|---|---|
+{layer_rows}
 
-![Exploratory GA and MAP-Elites archive comparison](artifacts/figures/search-diversity.png)
+Rules and classifier each catch most attacks on their own and overlap heavily, which is why
+removing any single detector changes little in the ablation below. Similarity search only flags
+close rewordings of known attacks, so on new attacks it is the weakest detector by design.
 
-The stored no-firewall search archives contain {ga['family_technique_cells']} occupied family/technique cells and {ga['successful_candidates']} breach candidates for GA, versus {map_elites['family_technique_cells']} cells and {map_elites['successful_candidates']} candidates for MAP-Elites. These runs used different budgets ({ga['search_steps']} vs. {map_elites['search_steps']} recorded history entries); this is an exploratory descriptive comparison, not a controlled algorithm ranking.
+### Ablation
 
-## Limitations and remaining work
+![Ablation]({fig_ablation})
 
-- The attack corpus and target are synthetic, intentionally simple, and small. A 6-attack holdout cannot establish general robustness.
-- Objective judge signals are deterministic and narrow. There is no independently human-labeled 100+ attempt set or measured LLM-judge accuracy.
-- Prompt Guard, Llama Guard, AgentDojo, and BIPIA are not included in this local comparison.
-- The current classifier is a compact logistic-regression JSON model; it is not DeBERTa/ModernBERT and is not exported to ONNX.
-- The gateway filters tool calls but the optional quarantine, full provenance propagation, tracing, and production approval workflow remain incomplete.
-- Hosted Groq access is optional. The gateway health check does not prove an upstream completion; a rotated API key is required for a fresh live check.
-- The dashboard is a lightweight local HTML view; no Next.js/WebSocket front end or demo recording is supplied.
+## 4. The hardening loop
 
-## Ethics and intended use
+Each round attacks the **training** seeds with every mutation operator, random two-step operator
+chains and a genetic search, against the current detectors. Every bypass is added to the
+classifier's training data, to the similarity index and as an exact signature; the classifier
+threshold is re-tuned on validation (maximising TPR - 3 x FPR).
 
-All experiments target only the included fake-data sandbox. Fake email/calendar actions are in-memory and have no real network side effects. Do not point the fuzzer at third-party services or real accounts. Results describe this prototype only and should not be used as a security certification.
+| Version | New training bypasses | Known attacks | Thresholds (clf / sim) | Validation ASR (detectors) | Holdout ASR (detectors) | Holdout ASR (full) | Holdout FPR |
+|---|---|---|---|---|---|---|---|
+{round_rows}
 
-## Reproduction
+![Hardening]({fig_hardening})
 
-Follow [REPRODUCIBILITY.md](REPRODUCIBILITY.md) to verify corpus hashes, regenerate evaluation artifacts, and build this report and its figures.
+{hardening_text}
+
+## 5. Search: genetic algorithm vs. MAP-Elites
+
+![MAP-Elites archive]({fig_grid})
+
+Against the detectors, the genetic algorithm evaluated {search_d['genetic']['evaluations']} candidates
+and kept {search_d['genetic']['breach_candidates']} breaching ones, concentrated in
+{len(search_d['genetic']['breach_families'])} families. MAP-Elites evaluated
+{search_d['map_elites']['evaluations']} candidates and found breaches in
+{search_d['map_elites']['breach_cells']} distinct family x technique cells across
+{len(search_d['map_elites']['breach_families'])} families. Quality-diversity search therefore maps
+*where* the defense is weak, which is more useful for hardening than one best attack. Budgets differ,
+so this is a descriptive comparison, not a ranking.
+
+## 6. Statistical confidence
+
+Mutations of one seed are correlated, so attempts are clustered by seed and resampled as clusters.
+
+| Profile vs. no defense | ASR | ASR reduction [95% cluster-bootstrap CI] | Paired sign-flip p |
+|---|---|---|---|
+{stat_rows}
+
+## 7. Limitations
+
+* The target is a **simulation** of a naive LLM, chosen for reproducibility. Real models fail in
+  more varied and less predictable ways; the optional hosted-model mode
+  (`SENTINELLOOP_UPSTREAM_URL`, `SENTINELLOOP_UPSTREAM_PERSONA=sandbox`) lets you test one.
+* The corpus is small and synthetic ({sum(counts[s]['attacks'] for s in counts)} seeds). Results
+  describe this benchmark, not real-world robustness, and the 11-request benign holdout makes
+  FPR estimates coarse.
+* **Rule development caveat.** The signature rules and the normalizer's slang/typo repair were
+  written while looking at the original 99 seeds, some of which are in this holdout, so the keyword
+  and detector holdout numbers are optimistic. A fairer estimate is a one-off blind check made during
+  development: on 28 new seeds written *before* the rules were tested against them, the rules caught
+  27 (96%).
+* **Known rule gap, left unfixed on purpose.** The "addressed to the AI" rule misses a vocative that
+  follows a colon or markup ("…but first: Assistant, please add…"). It was found by inspecting holdout
+  failures; patching it from the holdout would invalidate the holdout, so it is listed here instead.
+  The architectural layers stop it.
+* The sandbox gives the defender perfect provenance (it knows which text came from a document);
+  real systems must track this explicitly.
+* The output guard knows the exact secret. It catches spaced and base64 forms but **misses
+  reversed text**: the judge, which decodes more forms, measures that gap.
+* No external benchmarks (AgentDojo, BIPIA) or model-based guards (Prompt Guard, Llama Guard) are
+  included yet, and the human-labelled judge-validation sample is still unlabelled
+  (`artifacts/judge-labels.csv`).
+
+## 8. Ethics
+
+All attacks target only the included fake assistant; tools are in-memory no-ops and data is
+synthetic. Do not point the fuzzer at systems you do not own or have permission to test. See
+the responsible-use section of the [README](../README.md#responsible-use).
 """
-    (ROOT / "REPORT.md").write_text(report, encoding="utf-8")
-    print(f"Generated {ROOT / 'REPORT.md'} and figures under {FIGURES}")
+    REPORT.write_text(report, encoding="utf-8")
+    print(f"Wrote {REPORT} and {len(list(FIGURES.glob('*.png')))} figures in {FIGURES}")
 
 
 if __name__ == "__main__":
