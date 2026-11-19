@@ -17,8 +17,13 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -e ".[dev]"
-      - run: python -m ruff check .
-      - run: python -m black --check firewall fuzzer target_app evaluation hardening tests
-      - run: python -m pytest -q
-      - name: Run sandbox red-team regression gate
+      - name: Lint
+        run: python -m ruff check .
+      - name: Formatting
+        run: python -m black --check sentinelloop target_app firewall fuzzer evaluation hardening tests
+      - name: Tests
+        run: python -m pytest -q
+      - name: Locked holdout integrity
+        run: python -m evaluation.split_corpus --verify
+      - name: Red-team regression gate (validation split)
         run: python -m evaluation.regression_gate

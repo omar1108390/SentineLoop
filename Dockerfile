@@ -4,11 +4,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 WORKDIR /app
 
-COPY pyproject.toml README.md PROJECT_DESCRIPTION.md PROJECT_TASKS.md ./
+COPY pyproject.toml README.md ./
+COPY sentinelloop ./sentinelloop
 COPY target_app ./target_app
 COPY firewall ./firewall
 COPY fuzzer ./fuzzer
 COPY evaluation ./evaluation
+COPY hardening ./hardening
 RUN pip install --no-cache-dir ".[storage,jobs]" \
     && useradd --system --uid 10001 --create-home appuser \
     && chown -R appuser:appuser /app

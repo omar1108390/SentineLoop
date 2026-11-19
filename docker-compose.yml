@@ -36,10 +36,13 @@ services:
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_REDIS_URL: redis://redis:6379/0
-      SENTINELLOOP_SIMILARITY_THRESHOLD: ${SENTINELLOOP_SIMILARITY_THRESHOLD:-0.55}
+
       SENTINELLOOP_UPSTREAM_URL: ${SENTINELLOOP_UPSTREAM_URL:-}
       SENTINELLOOP_API_KEY: ${SENTINELLOOP_API_KEY:-}
       SENTINELLOOP_MODEL: ${SENTINELLOOP_MODEL:-sentinelloop-sandbox}
+      SENTINELLOOP_UPSTREAM_PERSONA: ${SENTINELLOOP_UPSTREAM_PERSONA:-}
+      SENTINELLOOP_DEFENSE_PROFILE: ${SENTINELLOOP_DEFENSE_PROFILE:-full}
+      SENTINELLOOP_ARTIFACTS_DIR: /app/artifacts
     restart: unless-stopped
     volumes:
       - ./artifacts:/app/artifacts:ro
@@ -66,7 +69,7 @@ services:
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_REDIS_URL: redis://redis:6379/0
-      SENTINELLOOP_SIMILARITY_THRESHOLD: ${SENTINELLOOP_SIMILARITY_THRESHOLD:-0.55}
+
       SENTINELLOOP_UPSTREAM_URL: ${SENTINELLOOP_UPSTREAM_URL:-}
       SENTINELLOOP_API_KEY: ${SENTINELLOOP_API_KEY:-}
       SENTINELLOOP_MODEL: ${SENTINELLOOP_MODEL:-}
@@ -81,7 +84,7 @@ services:
       - no-new-privileges:true
     healthcheck:
       disable: true
-    command: ["python", "-m", "fuzzer.runner", "--mutate", "--firewall"]
+    command: ["python", "-m", "fuzzer.runner", "--mutate", "--profile", "full"]
 
   worker:
     build: .
@@ -93,7 +96,7 @@ services:
     environment:
       SENTINELLOOP_DATABASE_URL: postgresql://sentinelloop:local-dev-only@postgres:5432/sentinelloop
       SENTINELLOOP_REDIS_URL: redis://redis:6379/0
-      SENTINELLOOP_SIMILARITY_THRESHOLD: ${SENTINELLOOP_SIMILARITY_THRESHOLD:-0.55}
+
       SENTINELLOOP_ARTIFACTS_DIR: /app/artifacts
     volumes:
       - ./artifacts:/app/artifacts

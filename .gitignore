@@ -10,3 +10,11 @@ mlruns/
 
 *.db
 artifacts/jobs/
+
+# Bulky per-attempt fuzzer dumps (regenerate with `python -m sentinelloop fuzz`);
+# the small *-summary.json files are committed for the dashboard.
+artifacts/fuzz/*
+!artifacts/fuzz/*-summary.json
+
+# Course report: kept locally, not published
+docs/rapport/
