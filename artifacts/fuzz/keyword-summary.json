@@ -1,0 +1,76 @@
+{
+ "profile": "keyword",
+ "mutations": true,
+ "overall": {
+  "attempts": 2161,
+  "breaches": 15,
+  "asr": 0.006941230911614993
+ },
+ "summary": {
+  "context-confusion": {
+   "attempts": 195,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "data-exfiltration": {
+   "attempts": 233,
+   "breaches": 2,
+   "asr": 0.008583690987124463
+  },
+  "indirect-document": {
+   "attempts": 141,
+   "breaches": 1,
+   "asr": 0.0070921985815602835
+  },
+  "indirect-email": {
+   "attempts": 189,
+   "breaches": 4,
+   "asr": 0.021164021164021163
+  },
+  "indirect-web": {
+   "attempts": 140,
+   "breaches": 2,
+   "asr": 0.014285714285714285
+  },
+  "instruction-override": {
+   "attempts": 146,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "multi-turn": {
+   "attempts": 125,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "multilingual": {
+   "attempts": 159,
+   "breaches": 1,
+   "asr": 0.006289308176100629
+  },
+  "obfuscation": {
+   "attempts": 224,
+   "breaches": 1,
+   "asr": 0.004464285714285714
+  },
+  "payload-splitting": {
+   "attempts": 122,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "prompt-leaking": {
+   "attempts": 142,
+   "breaches": 1,
+   "asr": 0.007042253521126761
+  },
+  "refusal-suppression": {
+   "attempts": 152,
+   "breaches": 2,
+   "asr": 0.013157894736842105
+  },
+  "role-play": {
+   "attempts": 193,
+   "breaches": 1,
+   "asr": 0.0051813471502590676
+  }
+ }
+}

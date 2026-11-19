@@ -1,0 +1,107 @@
+{
+ "classifier_threshold": 0.7,
+ "classifier_version": "v3",
+ "similarity_threshold": 0.55,
+ "splits": {
+  "validation": {
+   "rules": {
+    "attack_items": 448,
+    "detected": 429,
+    "detection_rate": 0.9575892857142857,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.08570001227781177,
+     "p95": 0.23700000019744039
+    }
+   },
+   "classifier": {
+    "attack_items": 448,
+    "detected": 419,
+    "detection_rate": 0.9352678571428571,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.04429998807609081,
+     "p95": 0.1260999997612089
+    }
+   },
+   "similarity": {
+    "attack_items": 448,
+    "detected": 44,
+    "detection_rate": 0.09821428571428571,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.21470000501722097,
+     "p95": 0.5256000004010275
+    }
+   },
+   "combined": {
+    "attack_items": 448,
+    "detected": 444,
+    "detection_rate": 0.9910714285714286,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.3586999955587089,
+     "p95": 0.8917999948607758
+    }
+   }
+  },
+  "holdout": {
+   "rules": {
+    "attack_items": 434,
+    "detected": 409,
+    "detection_rate": 0.9423963133640553,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.08350001007784158,
+     "p95": 0.22879999596625566
+    }
+   },
+   "classifier": {
+    "attack_items": 434,
+    "detected": 413,
+    "detection_rate": 0.9516129032258065,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.04510000871960074,
+     "p95": 0.1247000036528334
+    }
+   },
+   "similarity": {
+    "attack_items": 434,
+    "detected": 64,
+    "detection_rate": 0.14746543778801843,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.2364999963901937,
+     "p95": 0.5818999925395474
+    }
+   },
+   "combined": {
+    "attack_items": 434,
+    "detected": 425,
+    "detection_rate": 0.9792626728110599,
+    "benign_items": 12,
+    "false_positives": 0,
+    "false_positive_rate": 0.0,
+    "latency_ms": {
+     "p50": 0.37370000791270286,
+     "p95": 0.8513000066159293
+    }
+   }
+  }
+ }
+}

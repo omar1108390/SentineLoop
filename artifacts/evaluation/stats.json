@@ -1,0 +1,104 @@
+{
+ "baseline_profile": "none",
+ "comparisons": {
+  "keyword": {
+   "pairing": "attempt index + seed id + technique",
+   "cluster": "source seed prompt (all deterministic mutations stay together)",
+   "paired_attempts": 2161,
+   "seed_clusters": 127,
+   "baseline_asr": 0.9046737621471541,
+   "baseline_asr_ci95": [
+    0.8833025830258303,
+    0.9243697478991597
+   ],
+   "firewall_asr": 0.006941230911614993,
+   "firewall_asr_ci95": [
+    0.0036781609195402297,
+    0.010574712643678161
+   ],
+   "firewall_seed_clusters_with_breach": 14,
+   "firewall_seed_cluster_breach_rate": 0.11023622047244094,
+   "firewall_seed_cluster_breach_rate_ci95_wilson": [
+    0.06681000217884539,
+    0.17654909139660796
+   ],
+   "asr_reduction": 0.8977325312355391,
+   "asr_reduction_ci95": [
+    0.8766173752310537,
+    0.9180018850141376
+   ],
+   "cluster_permutation": {
+    "estimand": "mean per-seed ASR reduction",
+    "two_sided_p_value": 9.999000099990002e-05,
+    "permutations": 10000,
+    "seed": 42
+   },
+   "limitations": "Synthetic mutations are clustered by seed parent; uncertainty applies only to this corpus and does not establish generalization."
+  },
+  "detectors": {
+   "pairing": "attempt index + seed id + technique",
+   "cluster": "source seed prompt (all deterministic mutations stay together)",
+   "paired_attempts": 2161,
+   "seed_clusters": 127,
+   "baseline_asr": 0.9046737621471541,
+   "baseline_asr_ci95": [
+    0.8833025830258303,
+    0.9243697478991597
+   ],
+   "firewall_asr": 0.0018509949097639982,
+   "firewall_asr_ci95": [
+    0.0,
+    0.004215456674473068
+   ],
+   "firewall_seed_clusters_with_breach": 3,
+   "firewall_seed_cluster_breach_rate": 0.023622047244094488,
+   "firewall_seed_cluster_breach_rate_ci95_wilson": [
+    0.00806568008022535,
+    0.06715098984532873
+   ],
+   "asr_reduction": 0.9028227672373901,
+   "asr_reduction_ci95": [
+    0.8819047619047619,
+    0.922899353647276
+   ],
+   "cluster_permutation": {
+    "estimand": "mean per-seed ASR reduction",
+    "two_sided_p_value": 9.999000099990002e-05,
+    "permutations": 10000,
+    "seed": 42
+   },
+   "limitations": "Synthetic mutations are clustered by seed parent; uncertainty applies only to this corpus and does not establish generalization."
+  },
+  "full": {
+   "pairing": "attempt index + seed id + technique",
+   "cluster": "source seed prompt (all deterministic mutations stay together)",
+   "paired_attempts": 2161,
+   "seed_clusters": 127,
+   "baseline_asr": 0.9046737621471541,
+   "baseline_asr_ci95": [
+    0.8833025830258303,
+    0.9243697478991597
+   ],
+   "firewall_asr": 0.0,
+   "firewall_asr_ci95": null,
+   "firewall_seed_clusters_with_breach": 0,
+   "firewall_seed_cluster_breach_rate": 0.0,
+   "firewall_seed_cluster_breach_rate_ci95_wilson": [
+    0.0,
+    0.029359645293763368
+   ],
+   "asr_reduction": 0.9046737621471541,
+   "asr_reduction_ci95": [
+    0.8833025830258303,
+    0.9243697478991597
+   ],
+   "cluster_permutation": {
+    "estimand": "mean per-seed ASR reduction",
+    "two_sided_p_value": 9.999000099990002e-05,
+    "permutations": 10000,
+    "seed": 42
+   },
+   "limitations": "Synthetic mutations are clustered by seed parent; uncertainty applies only to this corpus and does not establish generalization."
+  }
+ }
+}

@@ -1,0 +1,76 @@
+{
+ "profile": "full",
+ "mutations": true,
+ "overall": {
+  "attempts": 2161,
+  "breaches": 0,
+  "asr": 0.0
+ },
+ "summary": {
+  "context-confusion": {
+   "attempts": 195,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "data-exfiltration": {
+   "attempts": 233,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "indirect-document": {
+   "attempts": 141,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "indirect-email": {
+   "attempts": 189,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "indirect-web": {
+   "attempts": 140,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "instruction-override": {
+   "attempts": 146,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "multi-turn": {
+   "attempts": 125,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "multilingual": {
+   "attempts": 159,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "obfuscation": {
+   "attempts": 224,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "payload-splitting": {
+   "attempts": 122,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "prompt-leaking": {
+   "attempts": 142,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "refusal-suppression": {
+   "attempts": 152,
+   "breaches": 0,
+   "asr": 0.0
+  },
+  "role-play": {
+   "attempts": 193,
+   "breaches": 0,
+   "asr": 0.0
+  }
+ }
+}

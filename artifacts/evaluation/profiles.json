@@ -1,0 +1,703 @@
+{
+ "scope": "deterministic sandbox; seeds + one variant per mutation operator",
+ "profiles": {
+  "none": "No protection: the vulnerable assistant on its own.",
+  "keyword": "Only the signature rules, like a simple keyword blocklist.",
+  "detectors": "All detectors (rules + ML classifier + similarity) on input and documents.",
+  "full": "Detectors plus architectural controls: quarantine, tool policy and output guard."
+ },
+ "splits": {
+  "validation": {
+   "none": {
+    "attacks": {
+     "attempts": 448,
+     "breaches": 400,
+     "asr": 0.8928571428571429,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 36,
+       "asr": 0.9230769230769231
+      },
+      "data-exfiltration": {
+       "attempts": 40,
+       "breaches": 35,
+       "asr": 0.875
+      },
+      "indirect-document": {
+       "attempts": 33,
+       "breaches": 29,
+       "asr": 0.8787878787878788
+      },
+      "indirect-email": {
+       "attempts": 47,
+       "breaches": 45,
+       "asr": 0.9574468085106383
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 26,
+       "asr": 0.9285714285714286
+      },
+      "instruction-override": {
+       "attempts": 34,
+       "breaches": 34,
+       "asr": 1.0
+      },
+      "multi-turn": {
+       "attempts": 20,
+       "breaches": 19,
+       "asr": 0.95
+      },
+      "multilingual": {
+       "attempts": 28,
+       "breaches": 24,
+       "asr": 0.8571428571428571
+      },
+      "obfuscation": {
+       "attempts": 48,
+       "breaches": 34,
+       "asr": 0.7083333333333334
+      },
+      "payload-splitting": {
+       "attempts": 19,
+       "breaches": 10,
+       "asr": 0.5263157894736842
+      },
+      "prompt-leaking": {
+       "attempts": 33,
+       "breaches": 31,
+       "asr": 0.9393939393939394
+      },
+      "refusal-suppression": {
+       "attempts": 39,
+       "breaches": 38,
+       "asr": 0.9743589743589743
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 39,
+       "asr": 0.975
+      }
+     },
+     "latency_ms": {
+      "p50": 2.9805,
+      "p95": 4.6572
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   },
+   "keyword": {
+    "attacks": {
+     "attempts": 448,
+     "breaches": 3,
+     "asr": 0.006696428571428571,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "data-exfiltration": {
+       "attempts": 40,
+       "breaches": 1,
+       "asr": 0.025
+      },
+      "indirect-document": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-email": {
+       "attempts": 47,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "instruction-override": {
+       "attempts": 34,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multi-turn": {
+       "attempts": 20,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multilingual": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "obfuscation": {
+       "attempts": 48,
+       "breaches": 1,
+       "asr": 0.020833333333333332
+      },
+      "payload-splitting": {
+       "attempts": 19,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "prompt-leaking": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "refusal-suppression": {
+       "attempts": 39,
+       "breaches": 1,
+       "asr": 0.02564102564102564
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      }
+     },
+     "latency_ms": {
+      "p50": 0.2036,
+      "p95": 3.4634
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   },
+   "detectors": {
+    "attacks": {
+     "attempts": 448,
+     "breaches": 2,
+     "asr": 0.004464285714285714,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "data-exfiltration": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-document": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-email": {
+       "attempts": 47,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "instruction-override": {
+       "attempts": 34,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multi-turn": {
+       "attempts": 20,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multilingual": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "obfuscation": {
+       "attempts": 48,
+       "breaches": 1,
+       "asr": 0.020833333333333332
+      },
+      "payload-splitting": {
+       "attempts": 19,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "prompt-leaking": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "refusal-suppression": {
+       "attempts": 39,
+       "breaches": 1,
+       "asr": 0.02564102564102564
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      }
+     },
+     "latency_ms": {
+      "p50": 0.5703,
+      "p95": 4.3745
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   },
+   "full": {
+    "attacks": {
+     "attempts": 448,
+     "breaches": 0,
+     "asr": 0.0,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "data-exfiltration": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-document": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-email": {
+       "attempts": 47,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "instruction-override": {
+       "attempts": 34,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multi-turn": {
+       "attempts": 20,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multilingual": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "obfuscation": {
+       "attempts": 48,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "payload-splitting": {
+       "attempts": 19,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "prompt-leaking": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "refusal-suppression": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      }
+     },
+     "latency_ms": {
+      "p50": 0.6924,
+      "p95": 4.4059
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   }
+  },
+  "holdout": {
+   "none": {
+    "attacks": {
+     "attempts": 434,
+     "breaches": 380,
+     "asr": 0.8755760368663594,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 30,
+       "asr": 0.7692307692307693
+      },
+      "data-exfiltration": {
+       "attempts": 35,
+       "breaches": 27,
+       "asr": 0.7714285714285715
+      },
+      "indirect-document": {
+       "attempts": 22,
+       "breaches": 22,
+       "asr": 1.0
+      },
+      "indirect-email": {
+       "attempts": 41,
+       "breaches": 41,
+       "asr": 1.0
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 28,
+       "asr": 1.0
+      },
+      "instruction-override": {
+       "attempts": 35,
+       "breaches": 34,
+       "asr": 0.9714285714285714
+      },
+      "multi-turn": {
+       "attempts": 14,
+       "breaches": 14,
+       "asr": 1.0
+      },
+      "multilingual": {
+       "attempts": 33,
+       "breaches": 26,
+       "asr": 0.7878787878787878
+      },
+      "obfuscation": {
+       "attempts": 55,
+       "breaches": 46,
+       "asr": 0.8363636363636363
+      },
+      "payload-splitting": {
+       "attempts": 20,
+       "breaches": 11,
+       "asr": 0.55
+      },
+      "prompt-leaking": {
+       "attempts": 38,
+       "breaches": 29,
+       "asr": 0.7631578947368421
+      },
+      "refusal-suppression": {
+       "attempts": 34,
+       "breaches": 34,
+       "asr": 1.0
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 38,
+       "asr": 0.95
+      }
+     },
+     "latency_ms": {
+      "p50": 2.9829,
+      "p95": 4.6597
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   },
+   "keyword": {
+    "attacks": {
+     "attempts": 434,
+     "breaches": 4,
+     "asr": 0.009216589861751152,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "data-exfiltration": {
+       "attempts": 35,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-document": {
+       "attempts": 22,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-email": {
+       "attempts": 41,
+       "breaches": 2,
+       "asr": 0.04878048780487805
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "instruction-override": {
+       "attempts": 35,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multi-turn": {
+       "attempts": 14,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multilingual": {
+       "attempts": 33,
+       "breaches": 1,
+       "asr": 0.030303030303030304
+      },
+      "obfuscation": {
+       "attempts": 55,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "payload-splitting": {
+       "attempts": 20,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "prompt-leaking": {
+       "attempts": 38,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "refusal-suppression": {
+       "attempts": 34,
+       "breaches": 1,
+       "asr": 0.029411764705882353
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      }
+     },
+     "latency_ms": {
+      "p50": 0.161,
+      "p95": 3.1986
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   },
+   "detectors": {
+    "attacks": {
+     "attempts": 434,
+     "breaches": 2,
+     "asr": 0.004608294930875576,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "data-exfiltration": {
+       "attempts": 35,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-document": {
+       "attempts": 22,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-email": {
+       "attempts": 41,
+       "breaches": 2,
+       "asr": 0.04878048780487805
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "instruction-override": {
+       "attempts": 35,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multi-turn": {
+       "attempts": 14,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multilingual": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "obfuscation": {
+       "attempts": 55,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "payload-splitting": {
+       "attempts": 20,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "prompt-leaking": {
+       "attempts": 38,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "refusal-suppression": {
+       "attempts": 34,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      }
+     },
+     "latency_ms": {
+      "p50": 0.5496,
+      "p95": 4.1545
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   },
+   "full": {
+    "attacks": {
+     "attempts": 434,
+     "breaches": 0,
+     "asr": 0.0,
+     "by_family": {
+      "context-confusion": {
+       "attempts": 39,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "data-exfiltration": {
+       "attempts": 35,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-document": {
+       "attempts": 22,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-email": {
+       "attempts": 41,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "indirect-web": {
+       "attempts": 28,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "instruction-override": {
+       "attempts": 35,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multi-turn": {
+       "attempts": 14,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "multilingual": {
+       "attempts": 33,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "obfuscation": {
+       "attempts": 55,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "payload-splitting": {
+       "attempts": 20,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "prompt-leaking": {
+       "attempts": 38,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "refusal-suppression": {
+       "attempts": 34,
+       "breaches": 0,
+       "asr": 0.0
+      },
+      "role-play": {
+       "attempts": 40,
+       "breaches": 0,
+       "asr": 0.0
+      }
+     },
+     "latency_ms": {
+      "p50": 0.7259,
+      "p95": 4.4716
+     }
+    },
+    "benign": {
+     "count": 12,
+     "flagged": 0,
+     "fpr": 0.0,
+     "task_success": 12,
+     "utility": 1.0,
+     "false_positives": []
+    }
+   }
+  }
+ }
+}
