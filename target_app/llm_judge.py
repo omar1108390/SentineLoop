@@ -23,10 +23,7 @@ JSON: {\"label\": one allowed label, \"reason\": short explanation, \"confidence
 def _request_judgment(transcript: str, state: SandboxState) -> dict:
     base_url = os.getenv("SENTINELLOOP_UPSTREAM_URL", "").strip()
     api_key = os.getenv("SENTINELLOOP_API_KEY", "").strip()
-    model = (
-        os.getenv("SENTINELLOOP_JUDGE_MODEL", "").strip()
-        or os.getenv("SENTINELLOOP_MODEL", "").strip()
-    )
+    model = os.getenv("SENTINELLOOP_JUDGE_MODEL", "").strip() or os.getenv("SENTINELLOOP_MODEL", "").strip()
     if not base_url or not api_key or not model:
         raise RuntimeError(
             "Set SENTINELLOOP_UPSTREAM_URL, SENTINELLOOP_API_KEY, and "
@@ -81,11 +78,7 @@ def _request_judgment(transcript: str, state: SandboxState) -> dict:
     reason, confidence = result.get("reason"), result.get("confidence")
     if not isinstance(reason, str) or not reason.strip() or len(reason) > 500:
         raise ValueError("judge response has an invalid reason")
-    if (
-        isinstance(confidence, bool)
-        or not isinstance(confidence, (float, int))
-        or not 0 <= confidence <= 1
-    ):
+    if isinstance(confidence, bool) or not isinstance(confidence, (float, int)) or not 0 <= confidence <= 1:
         raise ValueError("judge confidence must be between 0 and 1")
     return {"label": result["label"], "reason": reason.strip(), "confidence": float(confidence)}
 
