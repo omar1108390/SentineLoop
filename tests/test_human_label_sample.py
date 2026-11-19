@@ -12,6 +12,5 @@ def test_human_label_sample_is_seeded_and_balanced_by_family():
     assert first == second
     assert len(first) == 12
     assert {
-        family: sum(row["family"] == family for row in first)
-        for family in ("override", "indirect", "leak")
+        family: sum(row["family"] == family for row in first) for family in ("override", "indirect", "leak")
     } == {"override": 4, "indirect": 4, "leak": 4}

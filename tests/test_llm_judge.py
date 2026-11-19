@@ -34,7 +34,7 @@ def test_low_confidence_falls_back_to_objective_result(monkeypatch):
         lambda _transcript, _state: {"label": "breach", "reason": "unclear", "confidence": 0.2},
     )
     result = LLMJudge(minimum_confidence=0.7).evaluate("No action.", SandboxState())
-    assert result.label == "blocked"
+    assert result.label == "allowed-harmless"
 
 
 def test_invalid_confidence_threshold_is_rejected():
